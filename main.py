@@ -213,8 +213,6 @@ def main():
     print(f"Finished in {finish_time}.")
 
 
-# Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     main()
 
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
