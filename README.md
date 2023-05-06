@@ -1,4 +1,4 @@
-# minesweeper
-A simple console based minesweeper
+# Minesweeper
+A simple console based minesweeper clone.
 
-The results of a long night of coding.
+These are the results of a long night of coding.
