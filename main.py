@@ -108,7 +108,7 @@ def flag(valid_square):
     global visible_world
     if visible_world[valid_square[1]][valid_square[2]] == -2:
         visible_world[valid_square[1]][valid_square[2]] = -1
-        print(visible_world[valid_square[1]][valid_square[2]])
+        # print(visible_world[valid_square[1]][valid_square[2]])
     elif visible_world[valid_square[1]][valid_square[2]] == -1:
         visible_world[valid_square[1]][valid_square[2]] = -2
 
@@ -210,7 +210,7 @@ def main():
             break
 
     finish_time = time.time() - start_time
-    print(f"Finished in {finish_time}.")
+    print(f"Finished in {round(finish_time)} seconds.")
 
 
 if __name__ == '__main__':
