@@ -1,3 +1,4 @@
+"""Minesweeper game entry point"""
 import sys
 import time
 import random
@@ -11,13 +12,15 @@ world_size = 15
 
 
 def alph_to_coord(letter):
-    if isinstance(letter, str) or letter.isalpha():
+    """Converts a letter to its corresponding number a-1, b-2, etc."""
+    if isinstance(letter, str) and letter in alphabet:
         return int(ord(letter) - ord("a"))
     print("Internal Error! Bad string given!")
     sys.exit(1)
 
 
 def print_world():
+    """Prints the current minesweeper world in a grid"""
     if len(visible_world) > world_size or len(visible_world[1]) > world_size:
         return
 
@@ -51,6 +54,7 @@ def print_world():
 
 
 def validate(square, world_created):
+    """Validates input from user into a location on the grid"""
     if (square[0] in "Ff") and (len(square) == 3 or len(square) == 4) and (not square[1].isnumeric()) and \
             world_created:  # flag a square
         if not square[1] in alphabet:
@@ -88,6 +92,7 @@ def validate(square, world_created):
 
 
 def create_world(starting_square):
+    """Generates the first world, and populates with mines"""
     global visible_world, world
     visible_world = [[-2 for _i in range(world_size)] for _j in range(world_size)]
     world = [[0 for _i in range(world_size)] for _j in range(world_size)]
@@ -105,6 +110,7 @@ def create_world(starting_square):
 
 
 def flag(valid_square):
+    """Simple function for flagging a square"""
     global visible_world
     if visible_world[valid_square[1]][valid_square[2]] == -2:
         visible_world[valid_square[1]][valid_square[2]] = -1
@@ -114,6 +120,7 @@ def flag(valid_square):
 
 
 def check(valid_square):
+    """Function for processing a square and those around it"""
     global visible_world
     if visible_world[valid_square[0]][valid_square[1]] == -1:
         # square is flagged, ignore
@@ -167,6 +174,7 @@ def check(valid_square):
 
 
 def win():
+    """Check for a win if the world has bombs left that aren't flags"""
     for r, row in enumerate(world):
         for c, col in enumerate(row):
             if world[r][c] == 1 and not visible_world[r][c] == -1:
@@ -175,6 +183,7 @@ def win():
 
 
 def main():
+    """Main function and entry point for the minesweeper program"""
     global world, visible_world
     sys.setrecursionlimit(100 * world_size * world_size)
     start_time = time.time()
@@ -214,5 +223,5 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    main() # runs the program
 
