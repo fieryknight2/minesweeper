@@ -1,7 +1,10 @@
+#!/usr/bin/env python3
 """Minesweeper game entry point"""
 import sys
 import time
 import random
+
+MAX_WORLD_SIZE = 26
 
 alphabet = "abcdefghijklmnopqrstuvwxyz"
 visible_world = []
@@ -9,6 +12,19 @@ world = []
 
 mine_count = 25
 world_size = 15
+
+random_seed = time.time()
+
+help_string = \
+    """Welcome to Minesweeper!
+Usage: {} minesweeper.py
+    -h, --help: Print this help message
+    -v, --version: Print the version
+    -s, --seed: Set the random seed
+    -m, --mine-count: Set the number of mines
+    -w, --world-size: Set the world size
+"""
+version_string = "0.1.0alpha"
 
 
 def alph_to_coord(letter):
@@ -97,6 +113,8 @@ def create_world(starting_square):
     visible_world = [[-2 for _i in range(world_size)] for _j in range(world_size)]
     world = [[0 for _i in range(world_size)] for _j in range(world_size)]
 
+    random.seed(random_seed)
+
     for i in range(mine_count):
         r = random.randint(0, world_size - 1)
         c = random.randint(0, world_size - 1)
@@ -173,6 +191,48 @@ def check(valid_square):
     return False
 
 
+def process_args(args):
+    """Process command line arguments"""
+    if len(args) <= 1:
+        return
+
+    if args[1] == "-h" or args[1] == "--help":
+        print(help_string.format(args[0]))
+        sys.exit(0)
+
+    if args[1] == "-v" or args[1] == "--version":
+        print(version_string)
+        sys.exit(0)
+
+    for arg, i in enumerate(args[1:]):
+        if arg == "-s" or arg == "--size":
+            global world_size
+            if len(args) > i and str(args[i + 1]).isnumeric():
+                world_size = int(args[i + 1])
+                if world_size > MAX_WORLD_SIZE:
+                    print("World size must be less than {}.".format(MAX_WORLD_SIZE))
+                    print(help_string.format(args[0]))
+                    sys.exit(1)
+            else:
+                print(help_string.format(args[0]))
+                sys.exit(1)
+        if arg == "-m" or arg == "--mine-count":
+            global mine_count
+            if len(args) > i and str(args[i + 1]).isnumeric():
+                mine_count = int(args[i + 1])
+                if mine_count > MAX_WORLD_SIZE ** 2:
+                    print("Mine count must be less than {}.".format(MAX_WORLD_SIZE**2))
+                    print(help_string.format(args[0]))
+                    sys.exit(1)
+        if arg == "-r" or arg == "--random-seed":
+            global random_seed
+            if len(args) > i and str(args[i + 1]).isnumeric():
+                random_seed = int(args[i + 1])
+            else:
+                print(help_string.format(args[0]))
+                sys.exit(1)
+
+
 def win():
     """Check for a win if the world has bombs left that aren't flags"""
     for r, row in enumerate(world):
@@ -182,10 +242,12 @@ def win():
     return True
 
 
-def main():
+def main(args):
     """Main function and entry point for the minesweeper program"""
+    process_args(args)
+
     global world, visible_world
-    sys.setrecursionlimit(100 * world_size * world_size)
+    sys.setrecursionlimit(100 * world_size * world_size) # might need rework in the future
     start_time = time.time()
 
     # start game
@@ -223,5 +285,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main() # runs the program
-
+    main(sys.argv)  # runs the program
