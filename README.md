@@ -35,6 +35,10 @@ Experimental options:
 
 `--use-color`: Use color characters
 
+# TODO
+Fix the occasional bug related to certain squares not being checked in both the force 
+and normal check functions.
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE.md) file for details
