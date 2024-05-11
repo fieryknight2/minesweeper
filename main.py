@@ -5,17 +5,9 @@ import time
 import random
 
 MAX_WORLD_SIZE = 26
+ALPHABET = "abcdefghijklmnopqrstuvwxyz"
 
-alphabet = "abcdefghijklmnopqrstuvwxyz"
-visible_world = []
-world = []
-
-mine_count = 25
-world_size = 15
-
-random_seed = time.time()
-
-help_string = \
+HELP_STRING = \
     """Welcome to Minesweeper!
 Usage: {} minesweeper.py
     -h, --help: Print this help message
@@ -24,15 +16,27 @@ Usage: {} minesweeper.py
     -m, --mine-count: Set the number of mines
     -w, --world-size: Set the world size
 """
-version_string = "0.1.0alpha"
+
+VERSION_STRING = "0.2.0alpha"
 
 FLAG = -1
 HIDDEN = -2
 NOTHING = 0
 
+visible_world = []
+world = []
+
+mine_count = 25
+world_size = 15
+
+random_seed = time.time()
+
+
+
+
 def alph_to_coord(letter):
     """Converts a letter to its corresponding number a-1, b-2, etc."""
-    if isinstance(letter, str) and letter in alphabet:
+    if isinstance(letter, str) and letter in ALPHABET:
         return int(ord(letter) - ord("a"))
     print("Internal Error! Bad string given!")
     sys.exit(1)
@@ -48,7 +52,7 @@ def print_world():
     # print header
     print(" " * 4, end="")
     for letter in range(len(visible_world)):
-        print(alphabet[letter].upper(), end=" ")
+        print(ALPHABET[letter].upper(), end=" ")
     print()
 
     # print rows
@@ -73,13 +77,13 @@ def print_world():
 
 
 def validate(square, world_created):
+    """Validates input from user into a location on the grid"""
     if len(square) < 2:
         return -1
 
-    """Validates input from user into a location on the grid"""
-    if (square[0] in "Ff") and (len(square) == 3 or len(square) == 4) and (not square[1].isnumeric()) and \
-            world_created:  # flag a square
-        if not square[1] in alphabet:
+    if (square[0] in "Ff") and (len(square) == 3 or len(square) == 4) \
+            and (not square[1].isnumeric()) and world_created:  # flag a square
+        if not square[1] in ALPHABET:
             return -1
         if alph_to_coord(square[1]) > world_size or alph_to_coord(square[0]) < 0:
             return -1
@@ -100,7 +104,7 @@ def validate(square, world_created):
         return -1
 
     # check for letter
-    if not square[0] in alphabet:
+    if not square[0] in ALPHABET:
         return -1
     if alph_to_coord(square[0]) > world_size or alph_to_coord(square[0]) < 0:
         return -1
@@ -197,7 +201,8 @@ def check(valid_square: tuple[int, int]):
         if valid_square[0] > 0 and valid_square[1] < world_size - 1 and \
                 visible_world[valid_square[0] - 1][valid_square[1] + 1] == HIDDEN:
             check((valid_square[0] - 1, valid_square[1] + 1))  # top right
-        if valid_square[0] < world_size - 1 and visible_world[valid_square[0] + 1][valid_square[1]] == HIDDEN:
+        if valid_square[0] < world_size - 1 and \
+                visible_world[valid_square[0] + 1][valid_square[1]] == HIDDEN:
             check((valid_square[0] + 1, valid_square[1]))  # bottom
         if valid_square[0] < world_size - 1 and valid_square[1] > 0 and \
                 visible_world[valid_square[0] + 1][valid_square[1] - 1] == HIDDEN:
@@ -207,7 +212,8 @@ def check(valid_square: tuple[int, int]):
             check((valid_square[0] + 1, valid_square[1] + 1))  # bottom right
         if valid_square[1] > 0 and visible_world[valid_square[0]][valid_square[0] - 1] == HIDDEN:
             check((valid_square[0], valid_square[1] - 1))  # left
-        if valid_square[1] < world_size - 1 and visible_world[valid_square[0]][valid_square[1] + 1] == HIDDEN:
+        if valid_square[1] < world_size - 1 and \
+                visible_world[valid_square[0]][valid_square[1] + 1] == HIDDEN:
             check((valid_square[0], valid_square[1] + 1))  # right
 
     return False
@@ -219,11 +225,11 @@ def process_args(args):
         return
 
     if args[1] == "-h" or args[1] == "--help":
-        print(help_string.format(args[0]))
+        print(HELP_STRING.format(args[0]))
         sys.exit(0)
 
     if args[1] == "-v" or args[1] == "--version":
-        print(version_string)
+        print(VERSION_STRING)
         sys.exit(0)
 
     skip = False
@@ -243,11 +249,11 @@ def process_args(args):
                 world_size = int(args[i + 1])
                 if world_size > MAX_WORLD_SIZE:
                     print("World size must be less than {}.".format(MAX_WORLD_SIZE))
-                    print(help_string.format(args[0]))
+                    print(HELP_STRING.format(args[0]))
                     sys.exit(1)
                 print("World size set to {}.".format(world_size))
             else:
-                print(help_string.format(args[0]))
+                print(HELP_STRING.format(args[0]))
                 sys.exit(1)
             skip = True
         elif arg == "-m" or arg == "--mine-count":
@@ -255,14 +261,14 @@ def process_args(args):
             if len(args) > i and str(args[i + 1]).isnumeric():
                 mine_count = int(args[i + 1])
                 if mine_count > MAX_WORLD_SIZE ** 2:
-                    print("Mine count must be less than {}.".format(MAX_WORLD_SIZE**2))
-                    print(help_string.format(args[0]))
+                    print("Mine count must be less than {}.".format(MAX_WORLD_SIZE ** 2))
+                    print(HELP_STRING.format(args[0]))
                     sys.exit(1)
                 print("Mine count set to {}.".format(mine_count))
                 skip = True
         else:
             print("Unrecognized arguments: {}".format(arg), i)
-            print(help_string.format(args[0]))
+            print(HELP_STRING.format(args[0]))
             sys.exit(1)
 
 
@@ -280,7 +286,7 @@ def main(args):
     process_args(args)
 
     global world, visible_world
-    sys.setrecursionlimit(100 * world_size * world_size) # might need rework in the future
+    sys.setrecursionlimit(100 * world_size * world_size)  # might need rework in the future
     start_time = time.time()
 
     # start game

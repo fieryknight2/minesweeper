@@ -7,7 +7,7 @@ class MinesweeperTest(unittest.TestCase):
     def test_alph_to_coord(self):
         """Test if the alph_to_coord function works"""
         for i in range(26):
-            self.assertEqual(minesweeper.alph_to_coord(minesweeper.alphabet[i]), i)
+            self.assertEqual(minesweeper.alph_to_coord(minesweeper.ALPHABET[i]), i)
 
     def test_validate(self):
         """Test if the validate function works"""
