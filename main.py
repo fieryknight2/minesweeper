@@ -41,12 +41,18 @@ use_color = False
 
 random_seed = time.time()
 
-character_unicode = {
+CHARACTER_UNICODE = {
     "bomb": "💣",
     "flag": "\u2691",
     "hidden": "\u2588",
 }
 
+CHARACTER_COLOR = {
+    "bomb": "\033[31m",
+    "flag": "\033[32m",
+    "hidden": "\033[33m",
+    "reset": "\033[0m",
+}
 
 def alph_to_coord(letter):
     """Converts a letter to its corresponding number a-1, b-2, etc."""
@@ -81,17 +87,23 @@ def print_world():
         for item in row:
             if item == -2:  # -2 is not visible
                 if use_unicode:
-                    print(character_unicode["hidden"], end=" ")
+                    print(CHARACTER_UNICODE["hidden"], end=" ")
+                elif use_color:
+                    print(CHARACTER_COLOR["hidden"] + "X" + CHARACTER_COLOR["reset"], end=" ")
                 else:
                     print("X", end=" ")
             elif item == -1:  # -1 is flagged
                 if use_unicode:
-                    print(character_unicode["flag"], end=" ")
+                    print(CHARACTER_UNICODE["flag"], end=" ")
+                elif use_color:
+                    print(CHARACTER_COLOR["flag"] + "F" + CHARACTER_COLOR["reset"], end=" ")
                 else:
                     print("F", end=" ")
             elif item == -3:
                 if use_unicode:
-                    print(character_unicode["bomb"], end="")
+                    print(CHARACTER_UNICODE["bomb"], end="")
+                elif use_color:
+                    print(CHARACTER_COLOR["bomb"] + "B" + CHARACTER_COLOR["reset"], end=" ")
                 else:
                     print("B", end=" ")
             elif item == 0:  # 0  means nothing
