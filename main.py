@@ -73,6 +73,9 @@ def print_world():
 
 
 def validate(square, world_created):
+    if len(square) < 2:
+        return -1
+
     """Validates input from user into a location on the grid"""
     if (square[0] in "Ff") and (len(square) == 3 or len(square) == 4) and (not square[1].isnumeric()) and \
             world_created:  # flag a square
@@ -89,6 +92,9 @@ def validate(square, world_created):
         r = int(square[2:])
 
         return "f", r - 1, c
+
+    if not world_created and square[0] in "Ff" and not square[1].isnumeric():
+        return -1
 
     if len(square) != 2 and len(square) != 3:
         return -1
@@ -113,8 +119,8 @@ def validate(square, world_created):
 def create_world(starting_square):
     """Generates the first world, and populates with mines"""
     global visible_world, world
-    visible_world = [[HIDDEN for _i in range(world_size)] for _j in range(world_size)]
-    world = [[0 for _i in range(world_size)] for _j in range(world_size)]
+    visible_world = [[HIDDEN for _ in range(world_size)] for _j in range(world_size)]
+    world = [[0 for _ in range(world_size)] for _j in range(world_size)]
 
     random.seed(random_seed)
 
@@ -220,8 +226,18 @@ def process_args(args):
         print(version_string)
         sys.exit(0)
 
-    for arg, i in enumerate(args[1:]):
-        if arg == "-s" or arg == "--size":
+    skip = False
+    for j, arg in enumerate(args[1:]):
+        i = j + 1
+        if skip:
+            skip = False
+            continue
+        elif arg == "-s" or arg == "--seed":
+            global random_seed
+            if len(args) > i and str(args[i]).isnumeric():
+                random_seed = int(args[i])
+                skip = True
+        elif arg == "-w" or arg == "--world-size":
             global world_size
             if len(args) > i and str(args[i + 1]).isnumeric():
                 world_size = int(args[i + 1])
@@ -229,10 +245,12 @@ def process_args(args):
                     print("World size must be less than {}.".format(MAX_WORLD_SIZE))
                     print(help_string.format(args[0]))
                     sys.exit(1)
+                print("World size set to {}.".format(world_size))
             else:
                 print(help_string.format(args[0]))
                 sys.exit(1)
-        if arg == "-m" or arg == "--mine-count":
+            skip = True
+        elif arg == "-m" or arg == "--mine-count":
             global mine_count
             if len(args) > i and str(args[i + 1]).isnumeric():
                 mine_count = int(args[i + 1])
@@ -240,13 +258,12 @@ def process_args(args):
                     print("Mine count must be less than {}.".format(MAX_WORLD_SIZE**2))
                     print(help_string.format(args[0]))
                     sys.exit(1)
-        if arg == "-r" or arg == "--random-seed":
-            global random_seed
-            if len(args) > i and str(args[i + 1]).isnumeric():
-                random_seed = int(args[i + 1])
-            else:
-                print(help_string.format(args[0]))
-                sys.exit(1)
+                print("Mine count set to {}.".format(mine_count))
+                skip = True
+        else:
+            print("Unrecognized arguments: {}".format(arg), i)
+            print(help_string.format(args[0]))
+            sys.exit(1)
 
 
 def win():
