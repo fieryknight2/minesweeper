@@ -32,8 +32,6 @@ world_size = 15
 random_seed = time.time()
 
 
-
-
 def alph_to_coord(letter):
     """Converts a letter to its corresponding number a-1, b-2, etc."""
     if isinstance(letter, str) and letter in ALPHABET:
