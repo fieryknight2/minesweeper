@@ -29,4 +29,4 @@ To un-flag a square, use the flag character `f` again.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details
+This project is licensed under the MIT License - see the [LICENSE](LICENSE.md) file for details
