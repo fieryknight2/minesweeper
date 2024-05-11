@@ -27,6 +27,14 @@ To un-flag a square, use the flag character `f` again.
 
 `-w, --world-size`: Sets the world size
 
+`--no-white-space`: Do not print white space between squares
+
+Experimental options:
+
+`--use-unicode`: Use unicode characters
+
+`--use-color`: Use color characters
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE.md) file for details

@@ -15,12 +15,18 @@ Usage: {} minesweeper.py
     -s, --seed: Set the random seed
     -m, --mine-count: Set the number of mines
     -w, --world-size: Set the world size
+    --no-white-space: Do not print white space between squares
+    
+    Experimental options:
+    --use-unicode: Use unicode characters
+    --use-color: Use color characters
 """
 
 VERSION_STRING = "0.2.0alpha"
 
 FLAG = -1
 HIDDEN = -2
+BOMB = -3
 NOTHING = 0
 
 visible_world = []
@@ -29,7 +35,17 @@ world = []
 mine_count = 25
 world_size = 15
 
+print_white_space = False
+use_unicode = False
+use_color = False
+
 random_seed = time.time()
+
+character_unicode = {
+    "bomb": "💣",
+    "flag": "\u2691",
+    "hidden": "\u2588",
+}
 
 
 def alph_to_coord(letter):
@@ -45,7 +61,8 @@ def print_world():
     if len(visible_world) > world_size or len(visible_world[1]) > world_size:
         return
 
-    print("\n" * 15)  # add some space
+    if print_white_space:
+        print("\n" * 15)  # add some space
 
     # print header
     print(" " * 4, end="")
@@ -63,9 +80,20 @@ def print_world():
         print(form[len(form) - 2:], end=": ")
         for item in row:
             if item == -2:  # -2 is not visible
-                print("X", end=" ")
+                if use_unicode:
+                    print(character_unicode["hidden"], end=" ")
+                else:
+                    print("X", end=" ")
             elif item == -1:  # -1 is flagged
-                print("F", end=" ")
+                if use_unicode:
+                    print(character_unicode["flag"], end=" ")
+                else:
+                    print("F", end=" ")
+            elif item == -3:
+                if use_unicode:
+                    print(character_unicode["bomb"], end="")
+                else:
+                    print("B", end=" ")
             elif item == 0:  # 0  means nothing
                 print(" ", end=" ")
             else:  # Remaining items are numbers to print
@@ -156,6 +184,7 @@ def check(valid_square: tuple[int, int]):
         return False
 
     if world[valid_square[0]][valid_square[1]] == 1:  # check for a mine
+        visible_world[valid_square[0]][valid_square[1]] = BOMB
         return True
 
     # world is layed out in a grid:
@@ -265,8 +294,17 @@ def process_args(args):
                     sys.exit(1)
                 print(f"Mine count set to {mine_count}.")
                 skip = True
+        elif arg == "--no-white-space":
+            global print_white_space
+            print_white_space = False
+        elif arg == "--use-unicode":
+            global use_unicode
+            use_unicode = True
+        elif arg == "--use-color":
+            global use_color
+            use_color = True
         else:
-            print(f"Unrecognized arguments: {arg}", i)
+            print(f"Unrecognized arguments: {arg}")
             print(HELP_STRING.format(args[0]))
             sys.exit(1)
 
@@ -312,6 +350,9 @@ def main(args):
             x = check(validated_square)
             if x:
                 print("Oh No! You hit a bomb!")
+                print_world()
+                print("Oh No! You hit a bomb!")
+                print("You have lost!")
                 break
         if win():
             print("Congrats! You win!")
