@@ -224,11 +224,11 @@ def process_args(args):
     if len(args) <= 1:
         return
 
-    if args[1] == "-h" or args[1] == "--help":
+    if args[1] in ["-h", "--help"]:
         print(HELP_STRING.format(args[0]))
         sys.exit(0)
 
-    if args[1] == "-v" or args[1] == "--version":
+    if args[1] in ["-v", "--version"]:
         print(VERSION_STRING)
         sys.exit(0)
 
@@ -238,14 +238,15 @@ def process_args(args):
         if skip:
             skip = False
             continue
-        elif arg == "-s" or arg == "--seed":
+
+        if arg in ["-s", "--seed"]:
             global random_seed
-            if len(args) > i and str(args[i]).isnumeric():
+            if len(args) >= i and str(args[i]).isnumeric():
                 random_seed = int(args[i])
                 skip = True
-        elif arg == "-w" or arg == "--world-size":
+        elif arg in ["-w", "--world-size"]:
             global world_size
-            if len(args) > i and str(args[i + 1]).isnumeric():
+            if len(args) >= i and str(args[i + 1]).isnumeric():
                 world_size = int(args[i + 1])
                 if world_size > MAX_WORLD_SIZE:
                     print(f"World size must be less than {MAX_WORLD_SIZE}.")
@@ -256,9 +257,9 @@ def process_args(args):
                 print(HELP_STRING.format(args[0]))
                 sys.exit(1)
             skip = True
-        elif arg == "-m" or arg == "--mine-count":
+        elif arg in ["-m", "--mine-count"]:
             global mine_count
-            if len(args) > i and str(args[i + 1]).isnumeric():
+            if len(args) >= i and str(args[i + 1]).isnumeric():
                 mine_count = int(args[i + 1])
                 if mine_count > MAX_WORLD_SIZE ** 2:
                     print(f"Mine count must be less than {MAX_WORLD_SIZE ** 2}.")
