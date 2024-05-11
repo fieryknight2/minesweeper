@@ -26,3 +26,7 @@ To un-flag a square, use the flag character `f` again.
 `-m, --mine-count`: Sets the number of mines
 
 `-w, --world-size`: Sets the world size
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details
