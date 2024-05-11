@@ -54,6 +54,7 @@ CHARACTER_COLOR = {
     "reset": "\033[0m",
 }
 
+
 def alph_to_coord(letter):
     """Converts a letter to its corresponding number a-1, b-2, etc."""
     if isinstance(letter, str) and letter in ALPHABET:
@@ -191,6 +192,10 @@ def flag(valid_square):
 def check(valid_square: tuple[int, int]):
     """Function for processing a square and those around it"""
     global visible_world
+    if valid_square[0] < 0 or valid_square[1] < 0 or \
+            valid_square[0] >= world_size or valid_square[1] >= world_size:  # out of bounds
+        return False
+
     if visible_world[valid_square[0]][valid_square[1]] == FLAG:
         # square is flagged, ignore
         return False
@@ -256,6 +261,46 @@ def check(valid_square: tuple[int, int]):
             check((valid_square[0], valid_square[1] + 1))  # right
 
     return False
+
+
+def force_check(valid_square: tuple[int, int]):
+    """Force a check on all squares next to an already revealed square"""
+    global visible_world
+    bomb = 0
+    if visible_world[valid_square[0]][valid_square[1]] > 0:
+        # count nearby flags
+        flagged = 0
+        flagged += 1 if valid_square[0] > 0 and \
+            visible_world[valid_square[0] - 1][valid_square[1]] == FLAG else 0  # top
+        flagged += 1 if valid_square[0] > 0 and valid_square[1] > 0 and \
+            visible_world[valid_square[0] - 1][valid_square[1] - 1] == FLAG else 0  # top left
+        flagged += 1 if valid_square[0] > 0 and valid_square[1] < world_size - 1 and \
+            visible_world[valid_square[0] - 1][valid_square[1] + 1] == FLAG else 0  # top right
+
+        flagged += 1 if valid_square[0] < world_size - 1 and \
+            visible_world[valid_square[0] + 1][valid_square[1]] == FLAG else 0  # bottom
+        flagged += 1 if valid_square[0] < world_size - 1 and valid_square[1] > 0 and \
+            visible_world[valid_square[0] + 1][valid_square[1] - 1] == FLAG else 0  # bottom left
+        flagged += 1 if valid_square[0] < world_size - 1 and valid_square[1] < world_size - 1 and \
+            visible_world[valid_square[0] + 1][valid_square[1] + 1] == FLAG else 0  # bottom right
+
+        flagged += 1 if valid_square[1] > 0 and \
+            visible_world[valid_square[0]][valid_square[0] - 1] == FLAG else 0  # left
+        flagged += 1 if valid_square[1] < world_size - 1 and \
+            visible_world[valid_square[0]][valid_square[0] + 1] == FLAG else 0  # right
+
+        # only check if the user has flagged all nearby squares (to prevent accidental loss)
+        if flagged == visible_world[valid_square[0]][valid_square[1]]:
+            bomb += check((valid_square[0] - 1, valid_square[1]))  # top
+            bomb += check((valid_square[0] - 1, valid_square[1] - 1))  # top left
+            bomb += check((valid_square[0] - 1, valid_square[1] + 1))  # top right
+            bomb += check((valid_square[0] + 1, valid_square[1]))  # bottom
+            bomb += check((valid_square[0] + 1, valid_square[1] - 1))  # bottom left
+            bomb += check((valid_square[0] + 1, valid_square[1] + 1))  # bottom right
+            bomb += check((valid_square[0], valid_square[1] - 1))  # left
+            bomb += check((valid_square[0], valid_square[1] + 1))  # right
+
+    return bomb
 
 
 def process_args(args):
@@ -359,7 +404,12 @@ def main(args):
         if validated_square[0] == "f":  # flag
             flag(validated_square)
         else:
-            x = check(validated_square)
+            x = False
+            if visible_world[validated_square[0]][validated_square[1]] > 0:
+                x = force_check(validated_square)
+            else:
+                x = check(validated_square)
+
             if x:
                 print("Oh No! You hit a bomb!")
                 print_world()
