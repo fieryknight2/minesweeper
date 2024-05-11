@@ -9,6 +9,9 @@ world = []
 mine_count = 25
 world_size = 15
 
+FLAG = -1
+HIDDEN = -2
+NOTHING = 0
 
 def alph_to_coord(letter):
     if isinstance(letter, str) or letter.isalpha():
@@ -26,7 +29,7 @@ def print_world():
     # print header
     print(" " * 4, end="")
     for letter in range(len(visible_world)):
-        print(alphabet[letter], end=" ")
+        print(alphabet[letter].upper(), end=" ")
     print()
 
     # print rows
@@ -89,7 +92,7 @@ def validate(square, world_created):
 
 def create_world(starting_square):
     global visible_world, world
-    visible_world = [[-2 for _i in range(world_size)] for _j in range(world_size)]
+    visible_world = [[HIDDEN for _i in range(world_size)] for _j in range(world_size)]
     world = [[0 for _i in range(world_size)] for _j in range(world_size)]
 
     for i in range(mine_count):
@@ -99,42 +102,55 @@ def create_world(starting_square):
             r = random.randint(0, world_size - 1)
             c = random.randint(0, world_size - 1)
 
-        world[r][c] = 1
+        world[r][c] = 1  # 1 for a mine
 
     check(starting_square)
 
 
 def flag(valid_square):
     global visible_world
-    if visible_world[valid_square[1]][valid_square[2]] == -2:
-        visible_world[valid_square[1]][valid_square[2]] = -1
+    if visible_world[valid_square[1]][valid_square[2]] == HIDDEN:
+        visible_world[valid_square[1]][valid_square[2]] = FLAG
         # print(visible_world[valid_square[1]][valid_square[2]])
-    elif visible_world[valid_square[1]][valid_square[2]] == -1:
-        visible_world[valid_square[1]][valid_square[2]] = -2
+    elif visible_world[valid_square[1]][valid_square[2]] == FLAG:
+        visible_world[valid_square[1]][valid_square[2]] = HIDDEN
 
 
-def check(valid_square):
+def check(valid_square: tuple[int, int]):
     global visible_world
-    if visible_world[valid_square[0]][valid_square[1]] == -1:
+    if visible_world[valid_square[0]][valid_square[1]] == FLAG:
         # square is flagged, ignore
         return False
 
-    if world[valid_square[0]][valid_square[1]] == 1:
+    if world[valid_square[0]][valid_square[1]] == 1:  # check for a mine
         return True
 
+    # world is layed out in a grid:
+    # [
+    #  [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],  # row 0
+    #  [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],  # row 1
+    #  ...
+    # ]
+    #
+    # first access for world(world[0]) is a row and therefore corresponds to height
+    # second access for world(world[0][0]) is a column and therefore corresponds to width
+
     bombs_nearby = 0
-    if valid_square[0] > 0:
+
+    if valid_square[0] > 0:  # prevent out of bounds error
         bombs_nearby += world[valid_square[0] - 1][valid_square[1]]  # top
     if valid_square[0] > 0 and valid_square[1] > 0:
         bombs_nearby += world[valid_square[0] - 1][valid_square[1] - 1]  # top left
     if valid_square[0] > 0 and valid_square[1] < world_size - 1:
         bombs_nearby += world[valid_square[0] - 1][valid_square[1] + 1]  # top right
+
     if valid_square[0] < world_size - 1:
         bombs_nearby += world[valid_square[0] + 1][valid_square[1]]  # bottom
     if valid_square[0] < world_size - 1 and valid_square[1] > 0:
         bombs_nearby += world[valid_square[0] + 1][valid_square[1] - 1]  # bottom left
     if valid_square[0] < world_size - 1 and valid_square[1] < world_size - 1:
         bombs_nearby += world[valid_square[0] + 1][valid_square[1] + 1]  # bottom right
+
     if valid_square[1] > 0:
         bombs_nearby += world[valid_square[0]][valid_square[1] - 1]  # left
     if valid_square[1] < world_size - 1:
@@ -142,25 +158,25 @@ def check(valid_square):
     visible_world[valid_square[0]][valid_square[1]] = bombs_nearby
 
     if bombs_nearby == 0:
-        if valid_square[0] > 0 and visible_world[valid_square[0] - 1][valid_square[1]] == -2:
+        if valid_square[0] > 0 and visible_world[valid_square[0] - 1][valid_square[1]] == HIDDEN:
             check((valid_square[0] - 1, valid_square[1]))  # top
         if valid_square[0] > 0 and valid_square[1] > 0 and \
-                visible_world[valid_square[0] - 1][valid_square[1] - 1] == -2:
+                visible_world[valid_square[0] - 1][valid_square[1] - 1] == HIDDEN:
             check((valid_square[0] - 1, valid_square[1] - 1))  # top left
         if valid_square[0] > 0 and valid_square[1] < world_size - 1 and \
-                visible_world[valid_square[0] - 1][valid_square[1] + 1] == -2:
+                visible_world[valid_square[0] - 1][valid_square[1] + 1] == HIDDEN:
             check((valid_square[0] - 1, valid_square[1] + 1))  # top right
-        if valid_square[0] < world_size - 1 and visible_world[valid_square[0] + 1][valid_square[1]] == -2:
+        if valid_square[0] < world_size - 1 and visible_world[valid_square[0] + 1][valid_square[1]] == HIDDEN:
             check((valid_square[0] + 1, valid_square[1]))  # bottom
         if valid_square[0] < world_size - 1 and valid_square[1] > 0 and \
-                visible_world[valid_square[0] + 1][valid_square[1] - 1] == -2:
+                visible_world[valid_square[0] + 1][valid_square[1] - 1] == HIDDEN:
             check((valid_square[0] + 1, valid_square[1] - 1))  # bottom left
         if valid_square[0] < world_size - 1 and valid_square[1] < world_size - 1 and \
-                visible_world[valid_square[0] + 1][valid_square[1] + 1] == -2:
+                visible_world[valid_square[0] + 1][valid_square[1] + 1] == HIDDEN:
             check((valid_square[0] + 1, valid_square[1] + 1))  # bottom right
-        if valid_square[1] > 0 and visible_world[valid_square[0]][valid_square[0] - 1] == -2:
+        if valid_square[1] > 0 and visible_world[valid_square[0]][valid_square[0] - 1] == HIDDEN:
             check((valid_square[0], valid_square[1] - 1))  # left
-        if valid_square[1] < world_size - 1 and visible_world[valid_square[0]][valid_square[1] + 1] == -2:
+        if valid_square[1] < world_size - 1 and visible_world[valid_square[0]][valid_square[1] + 1] == HIDDEN:
             check((valid_square[0], valid_square[1] + 1))  # right
 
     return False
@@ -169,7 +185,7 @@ def check(valid_square):
 def win():
     for r, row in enumerate(world):
         for c, col in enumerate(row):
-            if world[r][c] == 1 and not visible_world[r][c] == -1:
+            if world[r][c] == 1 and not visible_world[r][c] == FLAG:
                 return False
     return True
 
@@ -215,4 +231,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
