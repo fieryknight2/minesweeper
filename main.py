@@ -285,9 +285,9 @@ def force_check(valid_square: tuple[int, int]):
             visible_world[valid_square[0] + 1][valid_square[1] + 1] == FLAG else 0  # bottom right
 
         flagged += 1 if valid_square[1] > 0 and \
-            visible_world[valid_square[0]][valid_square[0] - 1] == FLAG else 0  # left
+            visible_world[valid_square[0]][valid_square[1] - 1] == FLAG else 0  # left
         flagged += 1 if valid_square[1] < world_size - 1 and \
-            visible_world[valid_square[0]][valid_square[0] + 1] == FLAG else 0  # right
+            visible_world[valid_square[0]][valid_square[1] + 1] == FLAG else 0  # right
 
         # only check if the user has flagged all nearby squares (to prevent accidental loss)
         if flagged == visible_world[valid_square[0]][valid_square[1]]:
