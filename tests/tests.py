@@ -66,3 +66,7 @@ class MinesweeperTest(unittest.TestCase):
                 minesweeper.flag(("f", i, j))
 
         self.assertEqual(minesweeper.win(), True)
+
+
+if __name__ == '__main__':
+    unittest.main()
