@@ -248,10 +248,10 @@ def process_args(args):
             if len(args) > i and str(args[i + 1]).isnumeric():
                 world_size = int(args[i + 1])
                 if world_size > MAX_WORLD_SIZE:
-                    print("World size must be less than {}.".format(MAX_WORLD_SIZE))
+                    print(f"World size must be less than {MAX_WORLD_SIZE}.")
                     print(HELP_STRING.format(args[0]))
                     sys.exit(1)
-                print("World size set to {}.".format(world_size))
+                print(f"World size set to {world_size}.")
             else:
                 print(HELP_STRING.format(args[0]))
                 sys.exit(1)
@@ -261,13 +261,13 @@ def process_args(args):
             if len(args) > i and str(args[i + 1]).isnumeric():
                 mine_count = int(args[i + 1])
                 if mine_count > MAX_WORLD_SIZE ** 2:
-                    print("Mine count must be less than {}.".format(MAX_WORLD_SIZE ** 2))
+                    print(f"Mine count must be less than {MAX_WORLD_SIZE ** 2}.")
                     print(HELP_STRING.format(args[0]))
                     sys.exit(1)
-                print("Mine count set to {}.".format(mine_count))
+                print(f"Mine count set to {mine_count}.")
                 skip = True
         else:
-            print("Unrecognized arguments: {}".format(arg), i)
+            print(f"Unrecognized arguments: {arg}", i)
             print(HELP_STRING.format(args[0]))
             sys.exit(1)
 
@@ -285,7 +285,6 @@ def main(args):
     """Main function and entry point for the minesweeper program"""
     process_args(args)
 
-    global world, visible_world
     sys.setrecursionlimit(100 * world_size * world_size)  # might need rework in the future
     start_time = time.time()
 
