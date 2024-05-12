@@ -1,6 +1,6 @@
 # Minesweeper
 
-A simple console based minesweeper clone.
+A simple console based minesweeper clone. Recent changes use the help of AI to code.
 
 ## Installation
 
