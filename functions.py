@@ -2,7 +2,9 @@
 import sys
 from typing import Callable
 
-from constants import *
+from constants import ALPHABET, HIDDEN, FLAG, CHARACTER_UNICODE, CHARACTER_COLOR
+from constants import MAX_REPEAT_WORLD_GEN, FAIL, QUIT
+
 import random
 
 _IS_FLAG_FAIL = -3
