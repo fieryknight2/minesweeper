@@ -39,6 +39,7 @@ import sys
 import time
 import random
 from functions import validate, print_world_item, generate_mines
+from functions import count_nearby_mines, check_all_nearby, count_mines
 from constants import *
 
 enable_tkinter = True
@@ -181,46 +182,12 @@ def check(valid_square: tuple[int, int]):
         visible_world[r][c] = BOMB
         return True
 
-    # world is laid out in a grid:
-    # [
-    #  [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],  # row 0
-    #  [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],  # row 1
-    #  ...
-    # ]
-    #
-    # first access for world(world[0]) is a row and therefore corresponds to height
-    # second access for world(world[0][0]) is a column and therefore corresponds to width
-    # access should be made in form world[r][c]
-
-    bombs_nearby = ((world[r - 1][c] if r > 0 else 0) +  # top
-                    (world[r - 1][c - 1] if r > 0 and c > 0 else 0) +  # top left
-                    (world[r - 1][c + 1] if r > 0 and c < world_size - 1 else 0) +  # top right
-                    (world[r + 1][c] if r < world_size - 1 else 0) +  # bottom
-                    (world[r + 1][c - 1] if r < world_size - 1 and c > 0 else 0) +  # bottom left
-                    (world[r + 1][c + 1] if r < world_size - 1 and c < world_size - 1 else 0) +  # bottom right
-                    (world[r][c - 1] if c > 0 else 0) +  # left
-                    (world[r][c + 1] if c < world_size - 1 else 0)  # right
-                    )
+    bombs_nearby = count_nearby_mines(world, r, c)
 
     visible_world[r][c] = bombs_nearby
 
     if bombs_nearby == 0:
-        if r > 0 and visible_world[r - 1][c] == HIDDEN:  # top
-            check((r - 1, c))
-        if r > 0 and c > 0 and visible_world[r - 1][c - 1] == HIDDEN:  # top left
-            check((r - 1, c - 1))
-        if r > 0 and c < world_size - 1 and visible_world[r - 1][c + 1] == HIDDEN:  # top right
-            check((r - 1, c + 1))
-        if r < world_size - 1 and visible_world[r + 1][c] == HIDDEN:  # bottom
-            check((r + 1, c))
-        if r < world_size - 1 and c > 0 and visible_world[r + 1][c - 1] == HIDDEN:  # bottom left
-            check((r + 1, c - 1))
-        if r < world_size - 1 and c < world_size - 1 and visible_world[r + 1][c + 1] == HIDDEN:  # bottom right
-            check((r + 1, c + 1))
-        if c > 0 and visible_world[r][c - 1] == HIDDEN:  # left
-            check((r, c - 1))
-        if c < world_size - 1 and visible_world[r][c + 1] == HIDDEN:  # right
-            check((r, c + 1))
+        check_all_nearby(visible_world, r, c, check)
 
     return False
 
@@ -343,19 +310,6 @@ def win():
     return True
 
 
-def count_mines():
-    """Count the number of mines not flagged in the world"""
-    m_count = 0
-    f_count = 0
-    for r in range(len(world)):
-        for c in range(len(world[r])):
-            if world[r][c] == 1:
-                m_count += 1
-            if visible_world[r][c] == FLAG:
-                f_count += 1
-    return m_count - f_count if m_count > f_count else 0
-
-
 def gui_new_game():
     """Create a new game"""
     global gui_buttons, gui_has_played_first_move, random_seed, gui_counting_time
@@ -433,7 +387,7 @@ def update_gui():
                 if visible_world[i][j] == 0:
                     gui_buttons[i][j].configure(state="disabled")
 
-    gui_mines_left.configure(text=str(count_mines()))
+    gui_mines_left.configure(text=str(count_mines(world, visible_world)))
 
 
 def gui_update_time():

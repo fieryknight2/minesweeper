@@ -1,5 +1,7 @@
 """Simple functions for simplification of main.py"""
 import sys
+from typing import Callable
+
 from constants import *
 import random
 
@@ -15,29 +17,24 @@ def _alph_to_coord(letter: str) -> int:
     sys.exit(1)
 
 
+def _print_char(char_type: str, method: str, character: str) -> None:
+    """Prints a character"""
+    if method == "use_unicode":
+        print(CHARACTER_UNICODE[char_type], end=" ")
+    elif method == "use_color":
+        print(CHARACTER_COLOR[char_type] + character + CHARACTER_COLOR["reset"], end=" ")
+    else:
+        print(character, end=" ")
+
+
 def print_world_item(item: int, method: str) -> None:
     """Prints an element of the world"""
     if item == -2:  # -2 is not visible
-        if method == "use_unicode":
-            print(CHARACTER_UNICODE["hidden"], end=" ")
-        elif method == "use_color":
-            print(CHARACTER_COLOR["hidden"] + "X" + CHARACTER_COLOR["reset"], end=" ")
-        else:
-            print("X", end=" ")
+        _print_char("hidden", method, "X")
     elif item == -1:  # -1 is flagged
-        if method == "use_unicode":
-            print(CHARACTER_UNICODE["flag"], end=" ")
-        elif method == "use_color":
-            print(CHARACTER_COLOR["flag"] + "F" + CHARACTER_COLOR["reset"], end=" ")
-        else:
-            print("F", end=" ")
+        _print_char("flag", method, "F")
     elif item == -3:
-        if method == "use_unicode":
-            print(CHARACTER_UNICODE["bomb"], end="")
-        elif method == "use_color":
-            print(CHARACTER_COLOR["bomb"] + "B" + CHARACTER_COLOR["reset"], end=" ")
-        else:
-            print("B", end=" ")
+        _print_char("bomb", method, "B")
     elif item == 0:  # 0  means nothing
         print(" ", end=" ")
     else:  # Remaining items are numbers to print
@@ -131,6 +128,54 @@ def generate_mines(world: list[list[int]], avoid_square: tuple[int, int],
 
         if r != -1:  # check if mine should be created
             world[r][c] = 1  # 1 for a mine
+    return world
+
+
+def count_nearby_mines(world: list[list[int]], r: int, c: int) -> int:
+    mines_nearby = world[r - 1][c] if r > 0 else 0  # top
+    mines_nearby += world[r - 1][c - 1] if r > 0 and c > 0 else 0  # top left
+    mines_nearby += world[r - 1][c + 1] if r > 0 and c < len(world[r - 1]) - 1 else 0  # top right
+    mines_nearby += world[r + 1][c] if r < len(world[r + 1]) - 1 - 1 else 0  # bottom
+    mines_nearby += world[r + 1][c - 1] if r < len(world) - 1 and c > 0 else 0  # bottom left
+    mines_nearby += world[r + 1][c + 1] if r < len(world) - 1 and c < len(world[r + 1]) - 1 else 0  # bottom right
+    mines_nearby += world[r][c - 1] if c > 0 else 0  # left
+    mines_nearby += world[r][c + 1] if c < len(world[r]) - 1 else 0  # right
+
+    return mines_nearby
+
+
+def check_all_nearby(world: list[list[int]], r: int, c: int,
+                     function: Callable[[[int, int]], int]) -> None:
+    """Runs the supplied function on all the squares around the given square"""
+    if r > 0 and world[r - 1][c] == HIDDEN:  # top
+        _ = function((r - 1, c))
+    if r > 0 and c > 0 and world[r - 1][c - 1] == HIDDEN:  # top left
+        _ = function((r - 1, c - 1))
+    if r > 0 and c < len(world[r - 1]) - 1 and world[r - 1][c + 1] == HIDDEN:  # top right
+        function((r - 1, c + 1))
+    if r < len(world) - 1 and world[r + 1][c] == HIDDEN:  # bottom
+        _ = function((r + 1, c))
+    if r < len(world) - 1 and c > 0 and world[r + 1][c - 1] == HIDDEN:  # bottom left
+        _ = function((r + 1, c - 1))
+    if r < len(world) - 1 and c < len(world[r + 1]) - 1 and world[r + 1][c + 1] == HIDDEN:  # bottom right
+        _ = function((r + 1, c + 1))
+    if c > 0 and world[r][c - 1] == HIDDEN:  # left
+        _ = function((r, c - 1))
+    if c < len(world[r]) - 1 and world[r][c + 1] == HIDDEN:  # right
+        _ = function((r, c + 1))
+
+
+def count_mines(world, visible_world):
+    """Count the number of mines not flagged in the world"""
+    m_count = 0
+    f_count = 0
+    for r in range(len(world)):
+        for c in range(len(world[r])):
+            if world[r][c] == 1:
+                m_count += 1
+            if visible_world[r][c] == FLAG:
+                f_count += 1
+    return m_count - f_count if m_count > f_count else 0
 
 
 if __name__ == '__main__':
