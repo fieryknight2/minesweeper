@@ -38,8 +38,17 @@
 import sys
 import time
 import random
-import tkinter as tk
-import tkinter.ttk as ttk
+
+enable_tkinter = True
+
+try:
+    import tkinter as tk
+    import tkinter.ttk as ttk
+except ImportError:
+    enable_tkinter = False
+
+    tk = None
+    ttk = None
 
 MAX_WORLD_SIZE = 26
 MAX_REPEAT_WORLD_GEN = 100
@@ -79,15 +88,16 @@ use_unicode = False
 use_color = False
 use_gui = False
 
-gui_buttons = []
-gui_world: tk.Frame | None = None
-gui_root: tk.Tk | None = None
-gui_lose_message: tk.Label | None = None
-gui_win_message: tk.Label | None = None
-gui_mines_left: tk.Label | None = None
-gui_time_taken: tk.Label | None = None
-gui_has_played_first_move = False
-gui_counting_time = False
+if enable_tkinter:
+    gui_buttons = []
+    gui_world: tk.Frame | None = None
+    gui_root: tk.Tk | None = None
+    gui_lose_message: tk.Label | None = None
+    gui_win_message: tk.Label | None = None
+    gui_mines_left: tk.Label | None = None
+    gui_time_taken: tk.Label | None = None
+    gui_has_played_first_move = False
+    gui_counting_time = False
 
 random_seed = time.time()
 
@@ -426,6 +436,9 @@ def process_args(args):
             global use_color
             use_color = True
         elif arg == "--use-gui":
+            if not enable_tkinter:
+                print("Tkinter is not available, cannot use GUI.")
+                sys.exit(1)
             global use_gui
             use_gui = True
         else:
