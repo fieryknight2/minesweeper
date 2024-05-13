@@ -210,7 +210,7 @@ def check(valid_square: tuple[int, int]):
         visible_world[valid_square[0]][valid_square[1]] = BOMB
         return True
 
-    # world is layed out in a grid:
+    # world is laid out in a grid:
     # [
     #  [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],  # row 0
     #  [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],  # row 1
@@ -384,10 +384,20 @@ def win():
     return True
 
 
-def gui_new_game():
+def gui_new_game(gui_world):
     """Create a new game"""
     # Actual world creation should be delayed until the user clicks a tile
-    pass  # TODO implement
+    # clear the world
+    for child in gui_world.winfo_children():
+        child.destroy()
+
+    w_buttons = []
+    for i in range(world_size):
+        w_buttons.append([])
+        for j in range(world_size):
+            w_buttons[i].append(ttk.Button(gui_world, text="",
+                                           command=lambda a=i, b=j: gui_click(a, b)).grid(row=i, column=j))
+    return w_buttons
 
 
 def gui_click(i, j):
@@ -443,11 +453,7 @@ def gui_main(args):
     # Create world
     gui_world = ttk.Frame(root)
 
-    w_buttons = []
-    for i in range(world_size):
-        for j in range(world_size):
-            w_buttons.append(ttk.Button(gui_world, text="",
-                                        command=lambda a=i, b=j: gui_click(a, b)).grid(row=i, column=j))
+    w_buttons = gui_new_game(gui_world)
 
     gui_world.grid()
 
