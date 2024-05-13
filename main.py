@@ -206,16 +206,19 @@ def flag(valid_square):
 def check(valid_square: tuple[int, int]):
     """Function for processing a square and those around it"""
     global visible_world
-    if valid_square[0] < 0 or valid_square[1] < 0 or \
-            valid_square[0] >= world_size or valid_square[1] >= world_size:  # out of bounds
+
+    r, c = valid_square  # for readability
+
+    if r < 0 or c < 0 or \
+            r >= world_size or c >= world_size:  # out of bounds
         return False
 
-    if visible_world[valid_square[0]][valid_square[1]] == FLAG:
+    if visible_world[r][c] == FLAG:
         # square is flagged, ignore
         return False
 
-    if world[valid_square[0]][valid_square[1]] == 1:  # check for a mine
-        visible_world[valid_square[0]][valid_square[1]] = BOMB
+    if world[r][c] == 1:  # check for a mine
+        visible_world[r][c] = BOMB
         return True
 
     # world is laid out in a grid:
@@ -227,19 +230,17 @@ def check(valid_square: tuple[int, int]):
     #
     # first access for world(world[0]) is a row and therefore corresponds to height
     # second access for world(world[0][0]) is a column and therefore corresponds to width
+    # access should be made in form world[r][c]
 
-    bombs_nearby = 0
-
-    r, c = valid_square
-    bombs_nearby += ((world[r - 1][c] if r > 0 else 0) +  # top
-                     (world[r - 1][c - 1] if r > 0 and c > 0 else 0) +  # top left
-                     (world[r - 1][c + 1] if r > 0 and c < world_size - 1 else 0) +  # top right
-                     (world[r + 1][c] if r < world_size - 1 else 0) +  # bottom
-                     (world[r + 1][c - 1] if r < world_size - 1 and c > 0 else 0) +  # bottom left
-                     (world[r + 1][c + 1] if r < world_size - 1 and c < world_size - 1 else 0) +  # bottom right
-                     (world[r][c - 1] if c > 0 else 0) +  # left
-                     (world[r][c + 1] if c < world_size - 1 else 0)  # right
-                     )
+    bombs_nearby = ((world[r - 1][c] if r > 0 else 0) +  # top
+                    (world[r - 1][c - 1] if r > 0 and c > 0 else 0) +  # top left
+                    (world[r - 1][c + 1] if r > 0 and c < world_size - 1 else 0) +  # top right
+                    (world[r + 1][c] if r < world_size - 1 else 0) +  # bottom
+                    (world[r + 1][c - 1] if r < world_size - 1 and c > 0 else 0) +  # bottom left
+                    (world[r + 1][c + 1] if r < world_size - 1 and c < world_size - 1 else 0) +  # bottom right
+                    (world[r][c - 1] if c > 0 else 0) +  # left
+                    (world[r][c + 1] if c < world_size - 1 else 0)  # right
+                    )
 
     visible_world[r][c] = bombs_nearby
 
@@ -251,7 +252,7 @@ def check(valid_square: tuple[int, int]):
         if r > 0 and c < world_size - 1 and visible_world[r - 1][c + 1] == HIDDEN:  # top right
             check((r - 1, c + 1))
         if r < world_size - 1 and visible_world[r + 1][c] == HIDDEN:  # bottom
-            check((r + 1, valid_square[1]))
+            check((r + 1, c))
         if r < world_size - 1 and c > 0 and visible_world[r + 1][c - 1] == HIDDEN:  # bottom left
             check((r + 1, c - 1))
         if r < world_size - 1 and c < world_size - 1 and visible_world[r + 1][c + 1] == HIDDEN:  # bottom right
@@ -268,38 +269,37 @@ def force_check(valid_square: tuple[int, int]):
     """Force a check on all squares next to an already revealed square"""
     global visible_world
     bomb = 0
+    r, c = valid_square  # for readability
     if visible_world[valid_square[0]][valid_square[1]] > 0:
         # count nearby flags
-        flagged = 0
-        flagged += 1 if valid_square[0] > 0 and \
-            visible_world[valid_square[0] - 1][valid_square[1]] == FLAG else 0  # top
-        flagged += 1 if valid_square[0] > 0 and valid_square[1] > 0 and \
-            visible_world[valid_square[0] - 1][valid_square[1] - 1] == FLAG else 0  # top left
-        flagged += 1 if valid_square[0] > 0 and valid_square[1] < world_size - 1 and \
-            visible_world[valid_square[0] - 1][valid_square[1] + 1] == FLAG else 0  # top right
-
-        flagged += 1 if valid_square[0] < world_size - 1 and \
-            visible_world[valid_square[0] + 1][valid_square[1]] == FLAG else 0  # bottom
-        flagged += 1 if valid_square[0] < world_size - 1 and valid_square[1] > 0 and \
-            visible_world[valid_square[0] + 1][valid_square[1] - 1] == FLAG else 0  # bottom left
-        flagged += 1 if valid_square[0] < world_size - 1 and valid_square[1] < world_size - 1 and \
-            visible_world[valid_square[0] + 1][valid_square[1] + 1] == FLAG else 0  # bottom right
-
-        flagged += 1 if valid_square[1] > 0 and \
-            visible_world[valid_square[0]][valid_square[1] - 1] == FLAG else 0  # left
-        flagged += 1 if valid_square[1] < world_size - 1 and \
-            visible_world[valid_square[0]][valid_square[1] + 1] == FLAG else 0  # right
+        flagged = (
+            (visible_world[r - 1][c] if r > 0 and
+                visible_world[r - 1][c] == FLAG else 0) +  # top
+            (visible_world[r - 1][c - 1] if r > 0 and c > 0 and
+                visible_world[r - 1][c - 1] == FLAG else 0) +  # top left
+            (visible_world[r - 1][c + 1] if r > 0 and c < world_size - 1 and
+                visible_world[r - 1][c + 1] == FLAG else 0) +  # top right
+            (visible_world[r + 1][c] if r < world_size - 1 and visible_world[r + 1][c] == FLAG else 0) +  # bottom
+            (visible_world[r + 1][c - 1] if r < world_size - 1 and c > 0 and
+                visible_world[r + 1][c - 1] == FLAG else 0) +  # bottom left
+            (visible_world[r + 1][c + 1] if r < world_size - 1 and c < world_size - 1 and
+                visible_world[r + 1][c + 1] == FLAG else 0) +  # bottom right
+            (visible_world[r][c - 1] if c > 0 and visible_world[r][c - 1] == FLAG else 0) +  # left
+            (visible_world[r][c + 1] if c < world_size - 1 and visible_world[r][c + 1] == FLAG else 0)  # right
+        )
 
         # only check if the user has flagged all nearby squares (to prevent accidental loss)
         if flagged == visible_world[valid_square[0]][valid_square[1]]:
-            bomb += check((valid_square[0] - 1, valid_square[1]))  # top
-            bomb += check((valid_square[0] - 1, valid_square[1] - 1))  # top left
-            bomb += check((valid_square[0] - 1, valid_square[1] + 1))  # top right
-            bomb += check((valid_square[0] + 1, valid_square[1]))  # bottom
-            bomb += check((valid_square[0] + 1, valid_square[1] - 1))  # bottom left
-            bomb += check((valid_square[0] + 1, valid_square[1] + 1))  # bottom right
-            bomb += check((valid_square[0], valid_square[1] - 1))  # left
-            bomb += check((valid_square[0], valid_square[1] + 1))  # right
+            bomb = (
+                    check((r - 1, c)) +  # top
+                    check((r - 1, c - 1)) +  # top left
+                    check((r - 1, c + 1)) +  # top right
+                    check((r + 1, c)) +  # bottom
+                    check((r + 1, c - 1)) +  # bottom left
+                    check((r + 1, c + 1)) +  # bottom right
+                    check((r, c - 1)) +  # left
+                    check((r, c + 1))  # right
+            )
 
     return bomb
 
