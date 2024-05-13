@@ -3,6 +3,8 @@
 import sys
 import time
 import random
+import tkinter as tk
+import tkinter.ttk as ttk
 
 MAX_WORLD_SIZE = 26
 ALPHABET = "abcdefghijklmnopqrstuvwxyz"
@@ -38,6 +40,7 @@ world_size = 15
 print_white_space = False
 use_unicode = False
 use_color = False
+use_gui = False
 
 random_seed = time.time()
 
@@ -53,6 +56,8 @@ CHARACTER_COLOR = {
     "hidden": "\033[33m",
     "reset": "\033[0m",
 }
+
+start_time = 0
 
 
 def alph_to_coord(letter):
@@ -360,6 +365,9 @@ def process_args(args):
         elif arg == "--use-color":
             global use_color
             use_color = True
+        elif arg == "--use-gui":
+            global use_gui
+            use_gui = True
         else:
             print(f"Unrecognized arguments: {arg}")
             print(HELP_STRING.format(args[0]))
@@ -375,16 +383,97 @@ def win():
     return True
 
 
+def gui_new_game():
+    """Create a new game"""
+    # Actual world creation should be delayed until the user clicks a tile
+    pass  # TODO implement
+
+
+def gui_click(i, j):
+    """Click a tile"""
+    print(f"Clicked {i}, {j}")
+    pass  # TODO implement
+
+
+def gui_main(args):
+    """Alternative main loop for the GUI"""
+    global start_time
+    process_args(args)
+
+    # Create the main window and run the event loop
+    root = tk.Tk()
+    root.geometry('800x600')
+    root.title('Minesweeper')
+
+    # Create menu
+    text_label = ttk.Label(root, text="Minesweeper")
+    text_label.grid()
+
+    # Create main buttons
+    buttons = ttk.Frame(root)
+
+    new_game_button = ttk.Button(buttons, text="New Game", command=gui_new_game)
+    new_game_button.grid(column=0, row=0)
+
+    quit_button = ttk.Button(buttons, text="Quit", command=root.quit)
+    quit_button.grid(column=1, row=0)
+
+    buttons.columnconfigure(0, pad=15)
+    buttons.rowconfigure(1, pad=15)
+    buttons.grid()
+
+    # Create game timer and remaining mine count
+    counts = ttk.Frame(root)
+
+    timer_label = ttk.Label(counts, text="Timer")
+    timer_label.grid(column=0, row=0)
+
+    timer = ttk.Label(counts, text="0:00")
+    timer.grid(column=0, row=1)
+
+    mine_count_label = ttk.Label(counts, text="Mines Left")
+    mine_count_label.grid(column=1, row=0)
+
+    mine_count_visible = ttk.Label(counts, text="0")
+    mine_count_visible.grid(column=1, row=1)
+
+    counts.grid()
+
+    # Create world
+    gui_world = ttk.Frame(root)
+
+    w_buttons = []
+    for i in range(world_size):
+        for j in range(world_size):
+            w_buttons.append(ttk.Button(gui_world, text="",
+                                        command=lambda a=i, b=j: gui_click(a, b)).grid(row=i, column=j))
+
+    gui_world.grid()
+
+    start_time = time.time()  # start game timer
+    root.mainloop()
+
+
 def main(args):
     """Main function and entry point for the minesweeper program"""
+    global start_time
     process_args(args)
 
     sys.setrecursionlimit(100 * world_size * world_size)  # might need rework in the future
-    start_time = time.time()
+
+    if use_gui:
+        gui_main(args)  # start the GUI
+
+        # do something here (maybe)
+
+        return
 
     # start game
     print("Welcome to Minesweeper!")
     square = input("Enter a starting square to begin: ").lower()
+
+    start_time = time.time()  # start game timer
+
     validated_square = validate(square, False)
     while validated_square == -1:
         square = input("Enter a starting square to begin (Use algebraic notation): ").lower()
