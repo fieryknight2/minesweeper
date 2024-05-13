@@ -175,7 +175,8 @@ def create_world(starting_square):
     for i in range(mine_count):
         r = random.randint(0, world_size - 1)
         c = random.randint(0, world_size - 1)
-        while c == starting_square[0] and r == starting_square[1]:
+        #  prevent starting square from being a mine or stacking mines
+        while (c == starting_square[0] and r == starting_square[1]) or world[r][c] == 1:
             r = random.randint(0, world_size - 1)
             c = random.randint(0, world_size - 1)
 
@@ -493,7 +494,6 @@ def main(args):
         if validated_square[0] == "f":  # flag
             flag(validated_square)
         else:
-            x = False
             if visible_world[validated_square[0]][validated_square[1]] > 0:
                 x = force_check(validated_square)
             else:
