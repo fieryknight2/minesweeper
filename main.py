@@ -273,19 +273,14 @@ def force_check(valid_square: tuple[int, int]):
     if visible_world[valid_square[0]][valid_square[1]] > 0:
         # count nearby flags
         flagged = (
-            (visible_world[r - 1][c] if r > 0 and
-                visible_world[r - 1][c] == FLAG else 0) +  # top
-            (visible_world[r - 1][c - 1] if r > 0 and c > 0 and
-                visible_world[r - 1][c - 1] == FLAG else 0) +  # top left
-            (visible_world[r - 1][c + 1] if r > 0 and c < world_size - 1 and
-                visible_world[r - 1][c + 1] == FLAG else 0) +  # top right
-            (visible_world[r + 1][c] if r < world_size - 1 and visible_world[r + 1][c] == FLAG else 0) +  # bottom
-            (visible_world[r + 1][c - 1] if r < world_size - 1 and c > 0 and
-                visible_world[r + 1][c - 1] == FLAG else 0) +  # bottom left
-            (visible_world[r + 1][c + 1] if r < world_size - 1 and c < world_size - 1 and
-                visible_world[r + 1][c + 1] == FLAG else 0) +  # bottom right
-            (visible_world[r][c - 1] if c > 0 and visible_world[r][c - 1] == FLAG else 0) +  # left
-            (visible_world[r][c + 1] if c < world_size - 1 and visible_world[r][c + 1] == FLAG else 0)  # right
+            (r > 0 and visible_world[r - 1][c] == FLAG) +  # top
+            (r > 0 and c > 0 and visible_world[r - 1][c - 1] == FLAG) +  # top left
+            (r > 0 and c < world_size - 1 and visible_world[r - 1][c + 1] == FLAG) +  # top right
+            (r < world_size - 1 and visible_world[r + 1][c] == FLAG) +  # bottom
+            (r < world_size - 1 and c > 0 and visible_world[r + 1][c - 1] == FLAG) +  # bottom left
+            (r < world_size - 1 and c < world_size - 1 and visible_world[r + 1][c + 1] == FLAG) +  # bottom right
+            (c > 0 and visible_world[r][c - 1] == FLAG) +  # left
+            (c < world_size - 1 and visible_world[r][c + 1] == FLAG)  # right
         )
 
         # only check if the user has flagged all nearby squares (to prevent accidental loss)
