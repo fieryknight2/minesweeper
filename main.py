@@ -1,5 +1,40 @@
 #!/usr/bin/env python3
-"""Minesweeper game entry point"""
+"""
+* Copyright (c) 2024 Matthew Brown
+* Licensed under the MIT License, see LICENSE.md for details.
+*
+* About -
+* I created this program to stretch my understanding of Python and
+* to actually finish a project I have created. I started this project
+* in 2023 for fun, and I have recently started working on it again with
+* the help of AI to increase my knowledge of Python and practical coding.
+* This game was originally designed to be a simple console based, minesweeper
+* implementation, but I decided to add a GUI and unicode support for fun.
+*
+*
+* How to Play - Console Version -
+* To play the console version of the game, enter a square to get started.
+* Squares are denoted by a letter and a number respectively, for example, a1, b2, c3
+* This is akin to algebraic notation from chess which is a popular game I like.
+* to flag a square, enter the letter f followed by the square number, for example, ff3.
+* quitting the game currently requires the user to press Ctrl+C.
+*
+* How to Play - GUI Version -
+* As of now, the GUI version is still experimental and is not yet fully functional.
+* To play the GUI version of the game, run the program with the --use-gui flag. You can
+* begin by clicking any tile. The timer will then start ticking. To flag a tile, click
+* a tile with the right mouse button. To quit the game, click the Quit button.
+*
+* If you have any questions, comments or suggestions, please feel free to contact me
+* or open an issue on GitHub at https://github.com/fieryknight2/minesweeper.
+* I'm also available at my email address, furyinight3@gmail.com.
+*
+* main.py - Minesweeper game entry point
+*
+* Author: Matthew Brown
+* Created May 5, 2023
+* Last Modified May 13, 2024
+"""
 import sys
 import time
 import random
