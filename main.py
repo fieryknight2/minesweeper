@@ -38,6 +38,8 @@
 import sys
 import time
 import random
+from functions import validate, print_world_item
+from constants import *
 
 enable_tkinter = True
 
@@ -50,10 +52,6 @@ except ImportError:
     tk = None
     ttk = None
 
-MAX_WORLD_SIZE = 26
-MAX_REPEAT_WORLD_GEN = 100
-ALPHABET = "abcdefghijklmnopqrstuvwxyz"
-
 HELP_STRING = \
     """Welcome to Minesweeper!
 Usage: {} minesweeper.py
@@ -63,19 +61,15 @@ Usage: {} minesweeper.py
     -m, --mine-count: Set the number of mines
     -w, --world-size: Set the world size
     --no-white-space: Do not print white space between squares
-    
+
     Experimental options:
     --use-unicode: Use unicode characters
     --use-color: Use color characters
     --use-gui: Use the GUI
 """
 
-VERSION_STRING = "0.2.0alpha"
+VERSION_STRING = "0.3.0"
 
-FLAG = -1
-HIDDEN = -2
-BOMB = -3
-NOTHING = 0
 
 visible_world = []
 world = []
@@ -101,28 +95,7 @@ if enable_tkinter:
 
 random_seed = time.time()
 
-CHARACTER_UNICODE = {
-    "bomb": "💣",
-    "flag": "\u2691",
-    "hidden": "\u2588",
-}
-
-CHARACTER_COLOR = {
-    "bomb": "\033[31m",
-    "flag": "\033[32m",
-    "hidden": "\033[33m",
-    "reset": "\033[0m",
-}
-
 start_time = 0
-
-
-def alph_to_coord(letter):
-    """Converts a letter to its corresponding number a-1, b-2, etc."""
-    if isinstance(letter, str) and letter in ALPHABET:
-        return int(ord(letter) - ord("a"))
-    print("Internal Error! Bad string given!")
-    sys.exit(1)
 
 
 def print_world():
@@ -132,6 +105,13 @@ def print_world():
 
     if print_white_space:
         print("\n" * 15)  # add some space
+
+    if use_unicode:
+        method = "use_unicode"
+    elif use_color:
+        method = "use_color"
+    else:
+        method = "default"
 
     # print header
     print(" " * 4, end="")
@@ -148,80 +128,9 @@ def print_world():
         form = "0" + str(i + 1)
         print(form[len(form) - 2:], end=": ")
         for item in row:
-            if item == -2:  # -2 is not visible
-                if use_unicode:
-                    print(CHARACTER_UNICODE["hidden"], end=" ")
-                elif use_color:
-                    print(CHARACTER_COLOR["hidden"] + "X" + CHARACTER_COLOR["reset"], end=" ")
-                else:
-                    print("X", end=" ")
-            elif item == -1:  # -1 is flagged
-                if use_unicode:
-                    print(CHARACTER_UNICODE["flag"], end=" ")
-                elif use_color:
-                    print(CHARACTER_COLOR["flag"] + "F" + CHARACTER_COLOR["reset"], end=" ")
-                else:
-                    print("F", end=" ")
-            elif item == -3:
-                if use_unicode:
-                    print(CHARACTER_UNICODE["bomb"], end="")
-                elif use_color:
-                    print(CHARACTER_COLOR["bomb"] + "B" + CHARACTER_COLOR["reset"], end=" ")
-                else:
-                    print("B", end=" ")
-            elif item == 0:  # 0  means nothing
-                print(" ", end=" ")
-            else:  # Remaining items are numbers to print
-                print(str(item), end=" ")
+            print_world_item(item, method)
         print()
     print("Printed current field.", end="\n\n")
-
-
-def validate(square, world_created):
-    """Validates input from user into a location on the grid"""
-    if len(square) < 2:
-        return -1
-
-    if square == "quit":
-        return -2
-
-    if (square[0] in "Ff") and (len(square) == 3 or len(square) == 4) \
-            and (not square[1].isnumeric()) and world_created:  # flag a square
-        if not square[1] in ALPHABET:
-            return -1
-        if alph_to_coord(square[1]) > world_size or alph_to_coord(square[0]) < 0:
-            return -1
-        c = alph_to_coord(square[1])
-
-        if not square[2:].isnumeric():
-            return -1
-        if int(square[2:]) > world_size or int(square[2:]) < 1:
-            return -1
-        r = int(square[2:])
-
-        return "f", r - 1, c
-
-    if not world_created and square[0] in "Ff" and not square[1].isnumeric():
-        return -1
-
-    if len(square) != 2 and len(square) != 3:
-        return -1
-
-    # check for letter
-    if not square[0] in ALPHABET:
-        return -1
-    if alph_to_coord(square[0]) > world_size or alph_to_coord(square[0]) < 0:
-        return -1
-    c = alph_to_coord(square[0])
-
-    # check for number
-    if not square[1:].isnumeric():
-        return -1
-    if int(square[1:]) > world_size or int(square[1]) < 1:
-        return -1
-    r = int(square[1:])
-
-    return r - 1, c
 
 
 def create_world(starting_square):
@@ -697,10 +606,10 @@ def main(args):
 
     start_time = time.time()  # start game timer
 
-    validated_square = validate(square, False)
+    validated_square = validate(square, False, world_size)
     while validated_square == -1:
         square = input("Enter a starting square to begin (Use algebraic notation): ").lower()
-        validated_square = validate(square, False)
+        validated_square = validate(square, False, world_size)
 
     create_world(validated_square)
 
@@ -708,10 +617,10 @@ def main(args):
         print_world()
 
         square = input("Enter a square (type 'quit' for quit): ").lower()
-        validated_square = validate(square, True)
+        validated_square = validate(square, True, world_size)
         while validated_square == -1:
             square = input("Enter a square (Use algebraic notation): ").lower()
-            validated_square = validate(square, True)
+            validated_square = validate(square, True, world_size)
 
         if validated_square == -2:  # quit
             print("Quitting...")

@@ -1,11 +1,12 @@
 """Tests for the minesweeper game"""
 import main as minesweeper
+import functions
 
 
 def test_alph_to_coord():
     """Test if the alph_to_coord function works"""
     for i in range(26):
-        assert minesweeper.alph_to_coord(minesweeper.ALPHABET[i]) == i, "Alphabet to coords test failed."
+        assert functions._alph_to_coord(minesweeper.ALPHABET[i]) == i, "Alphabet to coords test failed."
 
 
 def test_validate():
