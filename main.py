@@ -36,7 +36,7 @@ NOTHING = 0
 visible_world = []
 world = []
 
-mine_count = 25
+mine_count = 5
 world_size = 15
 
 print_white_space = False
@@ -48,6 +48,7 @@ gui_buttons = []
 gui_world: tk.Frame | None = None
 gui_root: tk.Tk | None = None
 gui_lose_message: tk.Label | None = None
+gui_win_message: tk.Label | None = None
 gui_has_played_first_move = False
 
 random_seed = time.time()
@@ -402,8 +403,7 @@ def win():
                 return False  # Something not a bomb is flagged
     for r in visible_world:
         for c in r:
-            if r == HIDDEN:
-                print("Something not revealed")
+            if c == HIDDEN:
                 return False  # Square has not been revealed
     return True
 
@@ -422,6 +422,9 @@ def gui_new_game():
 
     if gui_lose_message is not None:
         gui_lose_message.destroy()
+
+    if gui_win_message is not None:
+        gui_win_message.destroy()
 
     gui_buttons = []
     for i in range(world_size):
@@ -443,6 +446,18 @@ def gui_lose():
     gui_lose_message.grid(row=0)
 
     update_gui()
+
+    for child in gui_world.winfo_children():
+        child.configure(state="disabled")
+
+
+def gui_win():
+    """Display a message to the user that they won"""
+    global gui_has_played_first_move, gui_win_message, random_seed
+    random_seed = time.time()
+
+    gui_win_message = tk.Label(gui_root, text="You have won!")
+    gui_win_message.grid(row=0)
 
     for child in gui_world.winfo_children():
         child.configure(state="disabled")
@@ -485,11 +500,13 @@ def gui_click(i, j):
         return
 
     if check((i, j)):
-        print("Checking")
         gui_lose()
         return
 
     update_gui()  # update the GUI
+
+    if win():
+        gui_win()
 
 
 def gui_flag(i, j):
@@ -502,6 +519,9 @@ def gui_flag(i, j):
 
     flag(("f", i, j))  # flag the tile
     update_gui()  # update the GUI
+
+    if win():
+        gui_win()
 
 
 def gui_main():
