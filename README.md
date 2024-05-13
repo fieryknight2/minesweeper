@@ -9,13 +9,13 @@ implementation, but I decided to add a GUI and unicode support for fun.
 
 ## Installation
 
-Clone the repository, there are no dependencies.
+Clone the repository, the only dependency is Python 3
 
 ## Usage and Controls
 
 ### Console Version
 
-Run `python main.py` to start the game.
+Run `python3 main.py` to start the game.
 
 The game uses a grid of squares, each designated by a letter and a number.
 To designate a square, use the algebraic notation, e.g. `a1` for the first square in the first row.
@@ -24,7 +24,7 @@ To un-flag a square, use the flag character `f` again.
 
 ### GUI Version
 
-Run `python main.py --use-gui` to start the game.
+Run `python3 main.py --use-gui` to start the game.
 
 Start the game by clicking any tile. The timer will then start ticking. To flag a tile, click
 a tile with the right mouse button. To quit the game, click the Quit button.
