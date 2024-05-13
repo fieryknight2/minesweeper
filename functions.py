@@ -1,6 +1,7 @@
 """Simple functions for simplification of main.py"""
 import sys
 from constants import *
+import random
 
 _IS_FLAG_FAIL = -3
 
@@ -96,6 +97,40 @@ def validate(square: str, world_created: bool, world_size: int) -> \
     r = int(square[1:])
 
     return r - 1, c
+
+
+def generate_mines(world: list[list[int]], avoid_square: tuple[int, int],
+                   mine_count: int, world_size: int) -> list[list[int]]:
+    """Generates the mines"""
+    for _ in range(mine_count):
+        r = random.randint(0, world_size - 1)
+        c = random.randint(0, world_size - 1)
+        #  prevent starting square from being a mine, next to a mine or stacking mines
+        repeated = 0
+        while ((r - 1 <= avoid_square[0] <= r + 1) and
+               (c - 1 <= avoid_square[1] <= c + 1)) or world[r][c] != 0:
+            if repeated > MAX_REPEAT_WORLD_GEN:
+                print("Maximum attempts to prevent generation errors reached.")
+                repeated = 0
+                while r == avoid_square[0] and c == avoid_square[1]:
+                    if repeated > MAX_REPEAT_WORLD_GEN:
+                        print("Warning in generation: Mine not created at starting square.")
+                        break
+
+                    r = random.randint(0, world_size - 1)
+                    c = random.randint(0, world_size - 1)
+
+                    repeated += 1
+                if repeated == MAX_REPEAT_WORLD_GEN:
+                    r = -1  # prevent mine from being created
+                break
+            r = random.randint(0, world_size - 1)
+            c = random.randint(0, world_size - 1)
+
+            repeated += 1
+
+        if r != -1:  # check if mine should be created
+            world[r][c] = 1  # 1 for a mine
 
 
 if __name__ == '__main__':

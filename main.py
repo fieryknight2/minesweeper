@@ -38,7 +38,7 @@
 import sys
 import time
 import random
-from functions import validate, print_world_item
+from functions import validate, print_world_item, generate_mines
 from constants import *
 
 enable_tkinter = True
@@ -148,35 +148,7 @@ def create_world(starting_square):
 
         return
 
-    for _ in range(mine_count):
-        r = random.randint(0, world_size - 1)
-        c = random.randint(0, world_size - 1)
-        #  prevent starting square from being a mine, next to a mine or stacking mines
-        repeated = 0
-        while ((r - 1 <= starting_square[0] <= r + 1) and
-               (c - 1 <= starting_square[1] <= c + 1)) or world[r][c] != 0:
-            if repeated > MAX_REPEAT_WORLD_GEN:
-                print("Maximum attempts to prevent generation errors reached.")
-                repeated = 0
-                while r == starting_square[0] and c == starting_square[1]:
-                    if repeated > MAX_REPEAT_WORLD_GEN:
-                        print("Warning in generation: Mine not created at starting square.")
-                        break
-
-                    r = random.randint(0, world_size - 1)
-                    c = random.randint(0, world_size - 1)
-
-                    repeated += 1
-                if repeated == MAX_REPEAT_WORLD_GEN:
-                    r = -1  # prevent mine from being created
-                break
-            r = random.randint(0, world_size - 1)
-            c = random.randint(0, world_size - 1)
-
-            repeated += 1
-
-        if r != -1:  # check if mine should be created
-            world[r][c] = 1  # 1 for a mine
+    world = generate_mines(world, starting_square, mine_count, world_size)
 
     check(starting_square)
 
