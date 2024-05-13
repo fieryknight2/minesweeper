@@ -257,9 +257,9 @@ def check(valid_square: tuple[int, int]):
             check((r + 1, c - 1))
         if r < world_size - 1 and c < world_size - 1 and visible_world[r + 1][c + 1] == HIDDEN:  # bottom right
             check((r + 1, c + 1))
-        if r > 0 and visible_world[r][c - 1] == HIDDEN:  # left
+        if c > 0 and visible_world[r][c - 1] == HIDDEN:  # left
             check((r, c - 1))
-        if r < world_size - 1 and visible_world[r][c + 1] == HIDDEN:  # right
+        if c < world_size - 1 and visible_world[r][c + 1] == HIDDEN:  # right
             check((r, c + 1))
 
     return False
