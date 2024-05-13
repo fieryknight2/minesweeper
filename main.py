@@ -36,7 +36,7 @@ NOTHING = 0
 visible_world = []
 world = []
 
-mine_count = 5
+mine_count = 25
 world_size = 15
 
 print_white_space = False
