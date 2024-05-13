@@ -17,7 +17,7 @@
 * Squares are denoted by a letter and a number respectively, for example, a1, b2, c3
 * This is akin to algebraic notation from chess which is a popular game I like.
 * to flag a square, enter the letter f followed by the square number, for example, ff3.
-* quitting the game currently requires the user to press Ctrl+C.
+* You may quit the game by typing 'quit' or by pressing Ctrl+C.
 *
 * How to Play - GUI Version -
 * As of now, the GUI version is still experimental and is not yet fully functional.
@@ -691,7 +691,7 @@ def main(args):
     while True:
         print_world()
 
-        square = input("Enter a square: ").lower()
+        square = input("Enter a square (type 'quit' for quit): ").lower()
         validated_square = validate(square, True)
         while validated_square == -1:
             square = input("Enter a square (Use algebraic notation): ").lower()
@@ -699,6 +699,9 @@ def main(args):
 
         if validated_square[0] == "f":  # flag
             flag(validated_square)
+        elif validated_square[0] == "quit":  # quit
+            print("Quitting...")
+            break
         else:
             if visible_world[validated_square[0]][validated_square[1]] > 0:
                 x = force_check(validated_square)
