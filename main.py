@@ -49,6 +49,7 @@ gui_world: tk.Frame | None = None
 gui_root: tk.Tk | None = None
 gui_lose_message: tk.Label | None = None
 gui_win_message: tk.Label | None = None
+gui_mines_left: tk.Label | None = None
 gui_has_played_first_move = False
 
 random_seed = time.time()
@@ -408,6 +409,16 @@ def win():
     return True
 
 
+def count_mines():
+    """Count the number of mines not flagged in the world"""
+    count = 0
+    for r in range(len(world)):
+        for c in range(len(world[r])):
+            if world[r][c] == 1 and visible_world[r][c] != FLAG:
+                count += 1
+    return count
+
+
 def gui_new_game():
     """Create a new game"""
     global gui_buttons, gui_has_played_first_move, random_seed
@@ -478,6 +489,8 @@ def update_gui():
                 if visible_world[i][j] == 0:
                     gui_buttons[i][j].configure(state="disabled")
 
+    gui_mines_left.configure(text=str(count_mines()))
+
 
 def gui_click(i, j):
     """Click a tile"""
@@ -526,7 +539,7 @@ def gui_flag(i, j):
 
 def gui_main():
     """Alternative main loop for the GUI"""
-    global start_time, gui_buttons, gui_world, gui_root
+    global start_time, gui_buttons, gui_world, gui_root, gui_mines_left, gui_time_taken
 
     # Create the main window and run the event loop
     gui_root = tk.Tk()
@@ -560,8 +573,8 @@ def gui_main():
     timer = ttk.Label(counts, text="0:00")
     timer.grid(column=0, row=1)
 
-    mine_count_label = ttk.Label(counts, text="Mines Left")
-    mine_count_label.grid(column=1, row=0)
+    gui_mine_count = ttk.Label(counts, text="Mines Left")
+    gui_mine_count.grid(column=1, row=0)
 
     mine_count_visible = ttk.Label(counts, text="0")
     mine_count_visible.grid(column=1, row=1)
