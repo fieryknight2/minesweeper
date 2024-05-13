@@ -179,23 +179,12 @@ def create_world(starting_square):
 
     random.seed(random_seed)
 
-    for i in range(mine_count):
+    for _ in range(mine_count):
         r = random.randint(0, world_size - 1)
         c = random.randint(0, world_size - 1)
-        #  prevent starting square from being a mine or stacking mines
-        while (c == starting_square[0] and r == starting_square[1]) and (
-                # prevent starting square from being next to a mine
-                world[r][c] +
-                (world[r-1][c] if r > 0 else 0) +  # top
-                (world[r-1][c+1] if r > 0 and c < world_size - 1 else 0) +  # top right
-                (world[r-1][c-1] if r > 0 and c > 0 else 0) +  # top left
-                (world[r+1][c] if r < world_size - 1 else 0) +  # bottom
-                (world[r+1][c+1] if r < world_size - 1 and c < world_size - 1 else 0) +  # bottom right
-                (world[r+1][c-1] if r < world_size - 1 and c > 0 else 0) +  # bottom left
-                (world[r][c-1] if c > 0 else 0) +  # left
-                (world[r][c+1] if c < world_size - 1 else 0)  # right
-                ) == 0:
-
+        #  prevent starting square from being a mine, next to a mine or stacking mines
+        while ((r - 1 <= starting_square[0] <= r + 1) and
+               (c - 1 <= starting_square[1] <= c + 1)) or world[r][c] != 0:
             r = random.randint(0, world_size - 1)
             c = random.randint(0, world_size - 1)
 
