@@ -43,6 +43,12 @@ use_unicode = False
 use_color = False
 use_gui = False
 
+gui_buttons = []
+gui_world: tk.Frame | None = None
+gui_root: tk.Tk | None = None
+gui_lose_message: tk.Label | None = None
+gui_has_played_first_move = False
+
 random_seed = time.time()
 
 CHARACTER_UNICODE = {
@@ -397,57 +403,130 @@ def win():
     return True
 
 
-def gui_new_game(gui_world):
+def gui_new_game():
     """Create a new game"""
     # Actual world creation should be delayed until the user clicks a tile
     # clear the world
     for child in gui_world.winfo_children():
         child.destroy()
 
+    if gui_lose_message is not None:
+        gui_lose_message.destroy()
+
+    gui_buttons.clear()
+
     w_buttons = []
     for i in range(world_size):
         w_buttons.append([])
         for j in range(world_size):
-            w_buttons[i].append(ttk.Button(gui_world, text="",
-                                           command=lambda a=i, b=j: gui_click(a, b)).grid(row=i, column=j))
+            w_buttons[i].append(ttk.Button(gui_world, takefocus=0, text="",
+                                           command=lambda a=i, b=j: gui_click(a, b)))
+            w_buttons[i][j].bind("<Button-3>", lambda event=None, a=i, b=j: gui_flag(a, b))
+            w_buttons[i][j]["width"] = 2
+            w_buttons[i][j].grid(row=i, column=j)
     return w_buttons
+
+
+def gui_lose():
+    """Display a message to the user that they lost"""
+    global gui_has_played_first_move, gui_lose_message
+    gui_has_played_first_move = False
+
+    gui_lose_message = tk.Label(gui_root, text="You have lost!")
+    gui_lose_message.grid(row=0)
+
+    update_gui()
+
+    for child in gui_world.winfo_children():
+        child.configure(state="disabled")
+
+
+def update_gui():
+    """Update the GUI"""
+    for i in range(world_size):
+        for j in range(world_size):
+            if visible_world[i][j] == HIDDEN:
+                gui_buttons[i][j].configure(text="")
+            elif visible_world[i][j] == FLAG:
+                gui_buttons[i][j].configure(text=CHARACTER_UNICODE["flag"])
+            elif visible_world[i][j] == BOMB:
+                gui_buttons[i][j].configure(text=CHARACTER_UNICODE["bomb"])
+            else:
+                gui_buttons[i][j].configure(text=str(visible_world[i][j]))
+                if visible_world[i][j] == 0:
+                    gui_buttons[i][j].configure(state="disabled")
 
 
 def gui_click(i, j):
     """Click a tile"""
-    print(f"Clicked {i}, {j}")
-    pass  # TODO implement
+    global gui_has_played_first_move
+
+    # Initialize the world if it hasn't been initialized yet
+    if not gui_has_played_first_move:
+        create_world((i, j))
+        gui_has_played_first_move = True
+
+        update_gui()  # update the GUI
+        return
+
+    if visible_world[i][j] > 0:
+        if force_check((i, j)):
+            gui_lose()
+        else:
+            update_gui()
+
+        return
+
+    if check((i, j)):
+        print("Checking")
+        gui_lose()
+        return
+
+    update_gui()  # update the GUI
+
+
+def gui_flag(i, j):
+    """Flag a tile"""
+    global gui_has_played_first_move
+
+    if not gui_has_played_first_move:
+        # player can't flag a tile until they have played a move
+        return
+
+    flag(("f", i, j))  # flag the tile
+    update_gui()  # update the GUI
 
 
 def gui_main(args):
     """Alternative main loop for the GUI"""
-    global start_time
+    global start_time, gui_buttons, gui_world, gui_root
     process_args(args)
 
     # Create the main window and run the event loop
-    root = tk.Tk()
-    root.geometry('800x600')
-    root.title('Minesweeper')
+    gui_root = tk.Tk()
+    gui_root.geometry()
+    gui_root.title('Minesweeper')
 
     # Create menu
-    text_label = ttk.Label(root, text="Minesweeper")
-    text_label.grid()
+    text_label = ttk.Label(gui_root, text="Minesweeper")
+    text_label.grid(row=1)
 
     # Create main buttons
-    buttons = ttk.Frame(root)
+    buttons = ttk.Frame(gui_root)
 
     new_game_button = ttk.Button(buttons, text="New Game", command=gui_new_game)
     new_game_button.grid(column=0, row=0)
 
-    quit_button = ttk.Button(buttons, text="Quit", command=root.quit)
+    quit_button = ttk.Button(buttons, text="Quit", command=gui_root.quit)
     quit_button.grid(column=1, row=0)
 
     buttons.columnconfigure(0, pad=15)
     buttons.rowconfigure(1, pad=15)
-    buttons.grid()
+
+    buttons.grid(row=2)
 
     # Create game timer and remaining mine count
-    counts = ttk.Frame(root)
+    counts = ttk.Frame(gui_root)
 
     timer_label = ttk.Label(counts, text="Timer")
     timer_label.grid(column=0, row=0)
@@ -461,17 +540,18 @@ def gui_main(args):
     mine_count_visible = ttk.Label(counts, text="0")
     mine_count_visible.grid(column=1, row=1)
 
-    counts.grid()
+    counts.grid(row=3)
 
     # Create world
-    gui_world = ttk.Frame(root)
+    gui_world = ttk.Frame(gui_root)
+    gui_world.configure(padding=10)
 
-    w_buttons = gui_new_game(gui_world)
+    gui_buttons = gui_new_game()
 
-    gui_world.grid()
+    gui_world.grid(row=4)
 
     start_time = time.time()  # start game timer
-    root.mainloop()
+    gui_root.mainloop()
 
 
 def main(args):
