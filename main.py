@@ -50,7 +50,9 @@ gui_root: tk.Tk | None = None
 gui_lose_message: tk.Label | None = None
 gui_win_message: tk.Label | None = None
 gui_mines_left: tk.Label | None = None
+gui_time_taken: tk.Label | None = None
 gui_has_played_first_move = False
+gui_counting_time = False
 
 random_seed = time.time()
 
@@ -302,14 +304,14 @@ def force_check(valid_square: tuple[int, int]):
     if visible_world[valid_square[0]][valid_square[1]] > 0:
         # count nearby flags
         flagged = (
-            (r > 0 and visible_world[r - 1][c] == FLAG) +  # top
-            (r > 0 and c > 0 and visible_world[r - 1][c - 1] == FLAG) +  # top left
-            (r > 0 and c < world_size - 1 and visible_world[r - 1][c + 1] == FLAG) +  # top right
-            (r < world_size - 1 and visible_world[r + 1][c] == FLAG) +  # bottom
-            (r < world_size - 1 and c > 0 and visible_world[r + 1][c - 1] == FLAG) +  # bottom left
-            (r < world_size - 1 and c < world_size - 1 and visible_world[r + 1][c + 1] == FLAG) +  # bottom right
-            (c > 0 and visible_world[r][c - 1] == FLAG) +  # left
-            (c < world_size - 1 and visible_world[r][c + 1] == FLAG)  # right
+                (r > 0 and visible_world[r - 1][c] == FLAG) +  # top
+                (r > 0 and c > 0 and visible_world[r - 1][c - 1] == FLAG) +  # top left
+                (r > 0 and c < world_size - 1 and visible_world[r - 1][c + 1] == FLAG) +  # top right
+                (r < world_size - 1 and visible_world[r + 1][c] == FLAG) +  # bottom
+                (r < world_size - 1 and c > 0 and visible_world[r + 1][c - 1] == FLAG) +  # bottom left
+                (r < world_size - 1 and c < world_size - 1 and visible_world[r + 1][c + 1] == FLAG) +  # bottom right
+                (c > 0 and visible_world[r][c - 1] == FLAG) +  # left
+                (c < world_size - 1 and visible_world[r][c + 1] == FLAG)  # right
         )
 
         # only check if the user has flagged all nearby squares (to prevent accidental loss)
@@ -421,9 +423,11 @@ def count_mines():
 
 def gui_new_game():
     """Create a new game"""
-    global gui_buttons, gui_has_played_first_move, random_seed
+    global gui_buttons, gui_has_played_first_move, random_seed, \
+        start_time, gui_counting_time
     gui_has_played_first_move = False
 
+    start_time = time.time()
     random_seed = time.time()
 
     # Actual world creation should be delayed until the user clicks a tile
@@ -446,6 +450,9 @@ def gui_new_game():
             gui_buttons[i][j].bind("<Button-3>", lambda event=None, a=i, b=j: gui_flag(a, b))
             gui_buttons[i][j]["width"] = 2
             gui_buttons[i][j].grid(row=i, column=j)
+
+    gui_counting_time = True
+    gui_update_time()
 
 
 def gui_lose():
@@ -490,6 +497,20 @@ def update_gui():
                     gui_buttons[i][j].configure(state="disabled")
 
     gui_mines_left.configure(text=str(count_mines()))
+
+
+def gui_update_time():
+    """Update the GUI timer"""
+    if gui_counting_time:
+        seconds = round(time.time() - start_time)
+        minutes, seconds = divmod(seconds, 60)
+        hours, minutes = divmod(minutes, 60)
+        seconds = str(seconds).zfill(2)
+        minutes = str(minutes).zfill(2)
+        hours = str(hours).zfill(2)
+        gui_time_taken.configure(text=hours + ":" + minutes + ":" + seconds)
+
+        gui_root.after(100, gui_update_time)
 
 
 def gui_click(i, j):
@@ -539,7 +560,8 @@ def gui_flag(i, j):
 
 def gui_main():
     """Alternative main loop for the GUI"""
-    global start_time, gui_buttons, gui_world, gui_root, gui_mines_left, gui_time_taken
+    global start_time, gui_buttons, gui_world, gui_root, \
+        gui_mines_left, gui_time_taken, gui_counting_time
 
     # Create the main window and run the event loop
     gui_root = tk.Tk()
@@ -570,8 +592,8 @@ def gui_main():
     timer_label = ttk.Label(counts, text="Timer")
     timer_label.grid(column=0, row=0)
 
-    timer = ttk.Label(counts, text="0:00")
-    timer.grid(column=0, row=1)
+    gui_time_taken = ttk.Label(counts, text="0:00")
+    gui_time_taken.grid(column=0, row=1)
 
     gui_mine_count = ttk.Label(counts, text="Mines Left")
     gui_mine_count.grid(column=1, row=0)
@@ -590,6 +612,9 @@ def gui_main():
     gui_world.grid(row=4)
 
     start_time = time.time()  # start game timer
+
+    gui_counting_time = True
+    gui_update_time()
     gui_root.mainloop()
 
 
