@@ -11,22 +11,23 @@ def test_alph_to_coord():
 
 def test_validate():
     """Test if the validate function works"""
-    minesweeper.world_size = 26
-    assert minesweeper.validate("fa1", True) == ("f", 0, 0), "Square validation failed"
-    assert minesweeper.validate("faa1", True) == -1, "Square validation failed"
-    assert minesweeper.validate("fa10", True) == ("f", 9, 0), "Square validation failed"
-    assert minesweeper.validate("fa1", False) == -1, "Square validation failed"
-    assert minesweeper.validate("faa1", False) == -1, "Square validation failed"
-    assert minesweeper.validate("f10", False) == (9, 5), "Square validation failed"
+    test_size = 26
+    minesweeper.world_size = test_size
+    assert functions.validate("fa1", True, test_size) == ("f", 0, 0), "Square validation failed"
+    assert functions.validate("faa1", True, test_size) == -1, "Square validation failed"
+    assert functions.validate("fa10", True, test_size) == ("f", 9, 0), "Square validation failed"
+    assert functions.validate("fa1", False, test_size) == -1, "Square validation failed"
+    assert functions.validate("faa1", False, test_size) == -1, "Square validation failed"
+    assert functions.validate("f10", False, test_size) == (9, 5), "Square validation failed"
 
     for b in (True, False):
-        assert minesweeper.validate("a1", b) == (0, 0), "Square validation failed"
-        assert minesweeper.validate("aa1", b) == -1, "Square validation failed"
-        assert minesweeper.validate("z1", b) == (0, 25), "Square validation failed"
-        assert minesweeper.validate("zaa", b) == -1, "Square validation failed"
-        assert minesweeper.validate("1z", b) == -1, "Square validation failed"
-        assert minesweeper.validate("1a", b) == -1, "Square validation failed"
-        assert minesweeper.validate("[1", b) == -1, "Square validation failed"
+        assert functions.validate("a1", b, test_size) == (0, 0), "Square validation failed"
+        assert functions.validate("aa1", b, test_size) == -1, "Square validation failed"
+        assert functions.validate("z1", b, test_size) == (0, 25), "Square validation failed"
+        assert functions.validate("zaa", b, test_size) == -1, "Square validation failed"
+        assert functions.validate("1z", b, test_size) == -1, "Square validation failed"
+        assert functions.validate("1a", b, test_size) == -1, "Square validation failed"
+        assert functions.validate("[1", b, test_size) == -1, "Square validation failed"
 
 
 def test_create_world():

@@ -58,6 +58,7 @@ def _check_flagging(square: str, world_size: int, world_created: bool) -> int | 
         r = int(square[2:])
 
         return "f", r - 1, c
+    return FAIL
 
 
 def validate(square: str, world_created: bool, world_size: int) -> \
@@ -72,6 +73,8 @@ def validate(square: str, world_created: bool, world_size: int) -> \
     flag = _check_flagging(square, world_size, world_created)
     if flag == _IS_FLAG_FAIL:
         return FAIL
+    elif flag != FAIL:
+        return flag
 
     if not world_created and square[0] in "Ff" and not square[1].isnumeric():
         return FAIL
@@ -135,7 +138,7 @@ def count_nearby_mines(world: list[list[int]], r: int, c: int) -> int:
     mines_nearby = world[r - 1][c] if r > 0 else 0  # top
     mines_nearby += world[r - 1][c - 1] if r > 0 and c > 0 else 0  # top left
     mines_nearby += world[r - 1][c + 1] if r > 0 and c < len(world[r - 1]) - 1 else 0  # top right
-    mines_nearby += world[r + 1][c] if r < len(world[r + 1]) - 1 - 1 else 0  # bottom
+    mines_nearby += world[r + 1][c] if r < len(world) - 1 else 0  # bottom
     mines_nearby += world[r + 1][c - 1] if r < len(world) - 1 and c > 0 else 0  # bottom left
     mines_nearby += world[r + 1][c + 1] if r < len(world) - 1 and c < len(world[r + 1]) - 1 else 0  # bottom right
     mines_nearby += world[r][c - 1] if c > 0 else 0  # left
