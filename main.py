@@ -230,50 +230,36 @@ def check(valid_square: tuple[int, int]):
 
     bombs_nearby = 0
 
-    # TODO improve this using ternary operators
-    if valid_square[0] > 0:  # prevent out of bounds error
-        bombs_nearby += world[valid_square[0] - 1][valid_square[1]]  # top
-    if valid_square[0] > 0 and valid_square[1] > 0:
-        bombs_nearby += world[valid_square[0] - 1][valid_square[1] - 1]  # top left
-    if valid_square[0] > 0 and valid_square[1] < world_size - 1:
-        bombs_nearby += world[valid_square[0] - 1][valid_square[1] + 1]  # top right
+    r, c = valid_square
+    bombs_nearby += ((world[r - 1][c] if r > 0 else 0) +  # top
+                     (world[r - 1][c - 1] if r > 0 and c > 0 else 0) +  # top left
+                     (world[r - 1][c + 1] if r > 0 and c < world_size - 1 else 0) +  # top right
+                     (world[r + 1][c] if r < world_size - 1 else 0) +  # bottom
+                     (world[r + 1][c - 1] if r < world_size - 1 and c > 0 else 0) +  # bottom left
+                     (world[r + 1][c + 1] if r < world_size - 1 and c < world_size - 1 else 0) +  # bottom right
+                     (world[r][c - 1] if c > 0 else 0) +  # left
+                     (world[r][c + 1] if c < world_size - 1 else 0)  # right
+                     )
 
-    if valid_square[0] < world_size - 1:
-        bombs_nearby += world[valid_square[0] + 1][valid_square[1]]  # bottom
-    if valid_square[0] < world_size - 1 and valid_square[1] > 0:
-        bombs_nearby += world[valid_square[0] + 1][valid_square[1] - 1]  # bottom left
-    if valid_square[0] < world_size - 1 and valid_square[1] < world_size - 1:
-        bombs_nearby += world[valid_square[0] + 1][valid_square[1] + 1]  # bottom right
-
-    if valid_square[1] > 0:
-        bombs_nearby += world[valid_square[0]][valid_square[1] - 1]  # left
-    if valid_square[1] < world_size - 1:
-        bombs_nearby += world[valid_square[0]][valid_square[1] + 1]  # right
-    visible_world[valid_square[0]][valid_square[1]] = bombs_nearby
+    visible_world[r][c] = bombs_nearby
 
     if bombs_nearby == 0:
-        if valid_square[0] > 0 and visible_world[valid_square[0] - 1][valid_square[1]] == HIDDEN:
-            check((valid_square[0] - 1, valid_square[1]))  # top
-        if valid_square[0] > 0 and valid_square[1] > 0 and \
-                visible_world[valid_square[0] - 1][valid_square[1] - 1] == HIDDEN:
-            check((valid_square[0] - 1, valid_square[1] - 1))  # top left
-        if valid_square[0] > 0 and valid_square[1] < world_size - 1 and \
-                visible_world[valid_square[0] - 1][valid_square[1] + 1] == HIDDEN:
-            check((valid_square[0] - 1, valid_square[1] + 1))  # top right
-        if valid_square[0] < world_size - 1 and \
-                visible_world[valid_square[0] + 1][valid_square[1]] == HIDDEN:
-            check((valid_square[0] + 1, valid_square[1]))  # bottom
-        if valid_square[0] < world_size - 1 and valid_square[1] > 0 and \
-                visible_world[valid_square[0] + 1][valid_square[1] - 1] == HIDDEN:
-            check((valid_square[0] + 1, valid_square[1] - 1))  # bottom left
-        if valid_square[0] < world_size - 1 and valid_square[1] < world_size - 1 and \
-                visible_world[valid_square[0] + 1][valid_square[1] + 1] == HIDDEN:
-            check((valid_square[0] + 1, valid_square[1] + 1))  # bottom right
-        if valid_square[1] > 0 and visible_world[valid_square[0]][valid_square[0] - 1] == HIDDEN:
-            check((valid_square[0], valid_square[1] - 1))  # left
-        if valid_square[1] < world_size - 1 and \
-                visible_world[valid_square[0]][valid_square[1] + 1] == HIDDEN:
-            check((valid_square[0], valid_square[1] + 1))  # right
+        if r > 0 and visible_world[r - 1][c] == HIDDEN:  # top
+            check((r - 1, c))
+        if r > 0 and c > 0 and visible_world[r - 1][c - 1] == HIDDEN:  # top left
+            check((r - 1, c - 1))
+        if r > 0 and c < world_size - 1 and visible_world[r - 1][c + 1] == HIDDEN:  # top right
+            check((r - 1, c + 1))
+        if r < world_size - 1 and visible_world[r + 1][c] == HIDDEN:  # bottom
+            check((r + 1, valid_square[1]))
+        if r < world_size - 1 and c > 0 and visible_world[r + 1][c - 1] == HIDDEN:  # bottom left
+            check((r + 1, c - 1))
+        if r < world_size - 1 and c < world_size - 1 and visible_world[r + 1][c + 1] == HIDDEN:  # bottom right
+            check((r + 1, c + 1))
+        if r > 0 and visible_world[r][c - 1] == HIDDEN:  # left
+            check((r, c - 1))
+        if r < world_size - 1 and visible_world[r][c + 1] == HIDDEN:  # right
+            check((r, c + 1))
 
     return False
 
