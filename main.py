@@ -426,11 +426,10 @@ def count_mines():
 
 def gui_new_game():
     """Create a new game"""
-    global gui_buttons, gui_has_played_first_move, random_seed, \
-        start_time, gui_counting_time
+    global gui_buttons, gui_has_played_first_move, random_seed, gui_counting_time
     gui_has_played_first_move = False
+    gui_counting_time = False
 
-    start_time = time.time()
     random_seed = time.time()
 
     # Actual world creation should be delayed until the user clicks a tile
@@ -444,6 +443,8 @@ def gui_new_game():
     if gui_win_message is not None:
         gui_win_message.destroy()
 
+    gui_time_taken.configure(text="00:00:00")
+
     gui_buttons = []
     for i in range(world_size):
         gui_buttons.append([])
@@ -453,9 +454,6 @@ def gui_new_game():
             gui_buttons[i][j].bind("<Button-3>", lambda event=None, a=i, b=j: gui_flag(a, b))
             gui_buttons[i][j]["width"] = 2
             gui_buttons[i][j].grid(row=i, column=j)
-
-    gui_counting_time = True
-    gui_update_time()
 
 
 def gui_lose():
@@ -522,7 +520,7 @@ def gui_update_time():
 
 def gui_click(i, j):
     """Click a tile"""
-    global gui_has_played_first_move
+    global gui_has_played_first_move, gui_counting_time, start_time
 
     # Initialize the world if it hasn't been initialized yet
     if not gui_has_played_first_move:
@@ -530,6 +528,11 @@ def gui_click(i, j):
         gui_has_played_first_move = True
 
         update_gui()  # update the GUI
+
+        # start game timer
+        start_time = time.time()
+        gui_counting_time = True
+        gui_update_time()
         return
 
     if visible_world[i][j] > 0:
@@ -620,8 +623,6 @@ def gui_main():
 
     start_time = time.time()  # start game timer
 
-    gui_counting_time = True
-    gui_update_time()
     gui_root.mainloop()
 
 
