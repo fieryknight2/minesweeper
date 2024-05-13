@@ -180,6 +180,13 @@ def create_world(starting_square):
 
     random.seed(random_seed)
 
+    if mine_count >= world_size ** 2:  # Backup for if validation fails somewhere
+        world = [[1 for _ in range(world_size)] for _j in range(world_size)]
+        world[starting_square[0]][starting_square[1]] = 0
+        check(starting_square)
+
+        return
+
     for _ in range(mine_count):
         r = random.randint(0, world_size - 1)
         c = random.randint(0, world_size - 1)
@@ -188,13 +195,27 @@ def create_world(starting_square):
         while ((r - 1 <= starting_square[0] <= r + 1) and
                (c - 1 <= starting_square[1] <= c + 1)) or world[r][c] != 0:
             if repeated > MAX_REPEAT_WORLD_GEN:
+                print("Maximum attempts to prevent generation errors reached.")
+                repeated = 0
+                while r == starting_square[0] and c == starting_square[1]:
+                    if repeated > MAX_REPEAT_WORLD_GEN:
+                        print("Warning in generation: Mine not created at starting square.")
+                        break
+
+                    r = random.randint(0, world_size - 1)
+                    c = random.randint(0, world_size - 1)
+
+                    repeated += 1
+                if repeated == MAX_REPEAT_WORLD_GEN:
+                    r = -1  # prevent mine from being created
                 break
             r = random.randint(0, world_size - 1)
             c = random.randint(0, world_size - 1)
 
             repeated += 1
 
-        world[r][c] = 1  # 1 for a mine
+        if r != -1:  # check if mine should be created
+            world[r][c] = 1  # 1 for a mine
 
     check(starting_square)
 
@@ -373,10 +394,17 @@ def process_args(args):
 
 def win():
     """Check for a win if the world has bombs left that aren't flags"""
-    for r, row in enumerate(world):
-        for c, col in enumerate(row):
+    for r in range(len(world)):
+        for c in range(len(world[r])):
             if world[r][c] == 1 and not visible_world[r][c] == FLAG:
-                return False
+                return False  # Bomb is not flagged
+            if world[r][c] == 0 and visible_world[r][c] == FLAG:
+                return False  # Something not a bomb is flagged
+    for r in visible_world:
+        for c in r:
+            if r == HIDDEN:
+                print("Something not revealed")
+                return False  # Square has not been revealed
     return True
 
 

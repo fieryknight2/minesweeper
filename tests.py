@@ -57,9 +57,10 @@ def test_flag():
 
 def test_win():
     """Test if the game win check works"""
-    minesweeper.world_size = 4
-    minesweeper.mine_count = 15
-    minesweeper.create_world((0, 0))
+    minesweeper.world = [[0, 1, 1], [1, 1, 1], [1, 1, 1]]
+    minesweeper.visible_world = [[minesweeper.HIDDEN for _ in range(3)] for _j in range(3)]
+
+    minesweeper.visible_world[0][0] = 3
 
     assert minesweeper.win() is False, "Win check test failed"
 
@@ -72,5 +73,5 @@ def test_win():
     assert minesweeper.win() is True, "Win check test failed"
 
     minesweeper.flag(("f", 0, 0))
-    minesweeper.flag(("f", 2, 2))
-    assert minesweeper.win() is True, "Win check test failed"
+    minesweeper.flag(("f", 1, 1))
+    assert minesweeper.win() is False, "Win check test failed"
