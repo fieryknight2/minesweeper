@@ -70,3 +70,7 @@ def test_win():
             minesweeper.flag(("f", i, j))
 
     assert minesweeper.win() is True, "Win check test failed"
+
+    minesweeper.flag(("f", 0, 0))
+    minesweeper.flag(("f", 2, 2))
+    assert minesweeper.win() is True, "Win check test failed"
