@@ -230,6 +230,7 @@ def check(valid_square: tuple[int, int]):
 
     bombs_nearby = 0
 
+    # TODO improve this using ternary operators
     if valid_square[0] > 0:  # prevent out of bounds error
         bombs_nearby += world[valid_square[0] - 1][valid_square[1]]  # top
     if valid_square[0] > 0 and valid_square[1] > 0:
@@ -359,7 +360,7 @@ def process_args(args):
             global mine_count
             if len(args) >= i and str(args[i + 1]).isnumeric():
                 mine_count = int(args[i + 1])
-                if mine_count > MAX_WORLD_SIZE ** 2:
+                if mine_count >= MAX_WORLD_SIZE ** 2:
                     print(f"Mine count must be less than {MAX_WORLD_SIZE ** 2}.")
                     print(HELP_STRING.format(args[0]))
                     sys.exit(1)
@@ -394,6 +395,11 @@ def win():
 
 def gui_new_game():
     """Create a new game"""
+    global gui_buttons, gui_has_played_first_move, random_seed
+    gui_has_played_first_move = False
+
+    random_seed = time.time()
+
     # Actual world creation should be delayed until the user clicks a tile
     # clear the world
     for child in gui_world.winfo_children():
@@ -402,24 +408,21 @@ def gui_new_game():
     if gui_lose_message is not None:
         gui_lose_message.destroy()
 
-    gui_buttons.clear()
-
-    w_buttons = []
+    gui_buttons = []
     for i in range(world_size):
-        w_buttons.append([])
+        gui_buttons.append([])
         for j in range(world_size):
-            w_buttons[i].append(ttk.Button(gui_world, takefocus=0, text="",
-                                           command=lambda a=i, b=j: gui_click(a, b)))
-            w_buttons[i][j].bind("<Button-3>", lambda event=None, a=i, b=j: gui_flag(a, b))
-            w_buttons[i][j]["width"] = 2
-            w_buttons[i][j].grid(row=i, column=j)
-    return w_buttons
+            gui_buttons[i].append(ttk.Button(gui_world, takefocus=0, text="",
+                                             command=lambda a=i, b=j: gui_click(a, b)))
+            gui_buttons[i][j].bind("<Button-3>", lambda event=None, a=i, b=j: gui_flag(a, b))
+            gui_buttons[i][j]["width"] = 2
+            gui_buttons[i][j].grid(row=i, column=j)
 
 
 def gui_lose():
     """Display a message to the user that they lost"""
-    global gui_has_played_first_move, gui_lose_message
-    gui_has_played_first_move = False
+    global gui_has_played_first_move, gui_lose_message, random_seed
+    random_seed = time.time()
 
     gui_lose_message = tk.Label(gui_root, text="You have lost!")
     gui_lose_message.grid(row=0)
@@ -486,10 +489,9 @@ def gui_flag(i, j):
     update_gui()  # update the GUI
 
 
-def gui_main(args):
+def gui_main():
     """Alternative main loop for the GUI"""
     global start_time, gui_buttons, gui_world, gui_root
-    process_args(args)
 
     # Create the main window and run the event loop
     gui_root = tk.Tk()
@@ -535,7 +537,7 @@ def gui_main(args):
     gui_world = ttk.Frame(gui_root)
     gui_world.configure(padding=10)
 
-    gui_buttons = gui_new_game()
+    gui_new_game()
 
     gui_world.grid(row=4)
 
@@ -551,10 +553,7 @@ def main(args):
     sys.setrecursionlimit(100 * world_size * world_size)  # might need rework in the future
 
     if use_gui:
-        gui_main(args)  # start the GUI
-
-        # do something here (maybe)
-
+        gui_main()  # start the GUI
         return
 
     # start game
