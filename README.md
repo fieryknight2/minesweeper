@@ -4,11 +4,11 @@ A simple console based minesweeper clone. Recent changes use the help of AI to c
 
 ## Installation
 
-Clone the repository, there are no dependencies.
+Clone the repository, the only dependency is Python 3
 
 ## Usage and Controls
 
-Run `python main.py` to start the game.
+Run `python3 main.py` to start the game.
 
 The game uses a grid of squares, each designated by a letter and a number.
 To designate a square, use the algebraic notation, e.g. `a1` for the first square in the first row.
