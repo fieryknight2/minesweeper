@@ -177,7 +177,19 @@ def create_world(starting_square):
         r = random.randint(0, world_size - 1)
         c = random.randint(0, world_size - 1)
         #  prevent starting square from being a mine or stacking mines
-        while (c == starting_square[0] and r == starting_square[1]) or world[r][c] == 1:
+        while (c == starting_square[0] and r == starting_square[1]) and (
+                # prevent starting square from being next to a mine
+                world[r][c] +
+                (world[r-1][c] if r > 0 else 0) +  # top
+                (world[r-1][c+1] if r > 0 and c < world_size - 1 else 0) +  # top right
+                (world[r-1][c-1] if r > 0 and c > 0 else 0) +  # top left
+                (world[r+1][c] if r < world_size - 1 else 0) +  # bottom
+                (world[r+1][c+1] if r < world_size - 1 and c < world_size - 1 else 0) +  # bottom right
+                (world[r+1][c-1] if r < world_size - 1 and c > 0 else 0) +  # bottom left
+                (world[r][c-1] if c > 0 else 0) +  # left
+                (world[r][c+1] if c < world_size - 1 else 0)  # right
+                ) == 0:
+
             r = random.randint(0, world_size - 1)
             c = random.randint(0, world_size - 1)
 
