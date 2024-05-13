@@ -7,6 +7,7 @@ import tkinter as tk
 import tkinter.ttk as ttk
 
 MAX_WORLD_SIZE = 26
+MAX_REPEAT_WORLD_GEN = 100
 ALPHABET = "abcdefghijklmnopqrstuvwxyz"
 
 HELP_STRING = \
@@ -183,10 +184,15 @@ def create_world(starting_square):
         r = random.randint(0, world_size - 1)
         c = random.randint(0, world_size - 1)
         #  prevent starting square from being a mine, next to a mine or stacking mines
+        repeated = 0
         while ((r - 1 <= starting_square[0] <= r + 1) and
                (c - 1 <= starting_square[1] <= c + 1)) or world[r][c] != 0:
+            if repeated > MAX_REPEAT_WORLD_GEN:
+                break
             r = random.randint(0, world_size - 1)
             c = random.randint(0, world_size - 1)
+
+            repeated += 1
 
         world[r][c] = 1  # 1 for a mine
 
