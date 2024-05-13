@@ -172,6 +172,9 @@ def validate(square, world_created):
     if len(square) < 2:
         return -1
 
+    if square == "quit":
+        return -2
+
     if (square[0] in "Ff") and (len(square) == 3 or len(square) == 4) \
             and (not square[1].isnumeric()) and world_created:  # flag a square
         if not square[1] in ALPHABET:
@@ -697,11 +700,11 @@ def main(args):
             square = input("Enter a square (Use algebraic notation): ").lower()
             validated_square = validate(square, True)
 
-        if validated_square[0] == "f":  # flag
-            flag(validated_square)
-        elif validated_square[0] == "quit":  # quit
+        if validated_square == -2:  # quit
             print("Quitting...")
             break
+        if validated_square[0] == "f":  # flag
+            flag(validated_square)
         else:
             if visible_world[validated_square[0]][validated_square[1]] > 0:
                 x = force_check(validated_square)
