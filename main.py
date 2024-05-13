@@ -413,12 +413,15 @@ def win():
 
 def count_mines():
     """Count the number of mines not flagged in the world"""
-    count = 0
+    m_count = 0
+    f_count = 0
     for r in range(len(world)):
         for c in range(len(world[r])):
-            if world[r][c] == 1 and visible_world[r][c] != FLAG:
-                count += 1
-    return count
+            if world[r][c] == 1:
+                m_count += 1
+            if visible_world[r][c] == FLAG:
+                f_count += 1
+    return m_count - f_count if m_count > f_count else 0
 
 
 def gui_new_game():
@@ -598,8 +601,8 @@ def gui_main():
     gui_mine_count = ttk.Label(counts, text="Mines Left")
     gui_mine_count.grid(column=1, row=0)
 
-    mine_count_visible = ttk.Label(counts, text="0")
-    mine_count_visible.grid(column=1, row=1)
+    gui_mines_left = ttk.Label(counts, text=str(mine_count))
+    gui_mines_left.grid(column=1, row=1)
 
     counts.grid(row=3)
 
