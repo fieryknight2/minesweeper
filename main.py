@@ -460,7 +460,7 @@ def gui_new_game():
 
 def gui_lose():
     """Display a message to the user that they lost"""
-    global gui_has_played_first_move, gui_lose_message, random_seed
+    global gui_has_played_first_move, gui_lose_message, random_seed, gui_counting_time
     random_seed = time.time()
 
     gui_lose_message = tk.Label(gui_root, text="You have lost!")
@@ -471,10 +471,12 @@ def gui_lose():
     for child in gui_world.winfo_children():
         child.configure(state="disabled")
 
+    gui_counting_time = False
+
 
 def gui_win():
     """Display a message to the user that they won"""
-    global gui_has_played_first_move, gui_win_message, random_seed
+    global gui_has_played_first_move, gui_win_message, random_seed, gui_counting_time
     random_seed = time.time()
 
     gui_win_message = tk.Label(gui_root, text="You have won!")
@@ -482,6 +484,8 @@ def gui_win():
 
     for child in gui_world.winfo_children():
         child.configure(state="disabled")
+
+    gui_counting_time = False
 
 
 def update_gui():
