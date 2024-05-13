@@ -541,6 +541,9 @@ def gui_click(i, j):
         else:
             update_gui()
 
+            if win():
+                gui_win()
+
         return
 
     if check((i, j)):
