@@ -35,6 +35,8 @@ Experimental options:
 
 `--use-color`: Use color characters
 
+`--use-gui`: Use the GUI
+
 # TODO
 Fix the occasional bug related to certain squares not being checked in both the force 
 and normal check functions.

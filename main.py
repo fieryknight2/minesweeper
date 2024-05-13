@@ -22,6 +22,7 @@ Usage: {} minesweeper.py
     Experimental options:
     --use-unicode: Use unicode characters
     --use-color: Use color characters
+    --use-gui: Use the GUI
 """
 
 VERSION_STRING = "0.2.0alpha"
