@@ -478,14 +478,20 @@ def gui_flag(i, j):
 
 def gui_change_mine_count(new_count):
     """Change the mine count"""
-    global mine_count
-    mine_count = new_count
+    if new_count == "":
+        return True  # Enable an empty text input
+    if not new_count.isnumeric():
+        return False
+    return True
 
 
 def gui_change_world_size(new_size):
     """Change the world size"""
-    global world_size
-    world_size = new_size
+    if new_size == "":
+        return True  # Enable an empty text input
+    if not new_size.isnumeric():
+        return False
+    return True
 
 
 def gui_process_new_game_input():
@@ -508,7 +514,6 @@ def gui_process_new_game_input():
     gui_new_game()
 
 
-
 def gui_new_game_window():
     """Create a new game window"""
     global gui_new_window, gui_mine_count, gui_world_size
@@ -516,26 +521,31 @@ def gui_new_game_window():
     gui_new_window = tk.Tk()
     gui_new_window.title("New Game")
 
+    reg_change_world_size = gui_new_window.register(gui_change_world_size)
+    reg_change_mine_count = gui_new_window.register(gui_change_mine_count)
+
+    # gui_new_window.geometry("400x100")
+
     tk.Label(gui_new_window, text="New Game").grid(row=0, column=1)
 
-    options = tk.Frame(gui_new_window)
+    tk.Label(gui_new_window, text="Mine Count").grid(row=1, column=0)
 
-    tk.Label(options, text="Mine Count").grid(row=0, column=0)
+    gui_mine_count = tk.Entry(gui_new_window)
+    gui_mine_count.insert(0, str(mine_count))
+    gui_mine_count.config(validate="key", validatecommand=(reg_change_mine_count, "%P"))
+    gui_mine_count.grid(row=2, column=0)
 
-    gui_mine_count = tk.Entry(options)
-    gui_mine_count.grid(row=1, column=0)
+    tk.Label(gui_new_window, text="World Size").grid(row=1, column=1)
 
-    tk.Label(options, text="World Size").grid(row=0, column=1)
-
-    gui_world_size = tk.Entry(options)
-    gui_world_size.grid(row=1, column=1)
-
-    options.configure(padx=10, pady=3)
-    options.grid(row=1, column=1)
+    gui_world_size = tk.Entry(gui_new_window)
+    gui_world_size.insert(0, str(world_size))
+    gui_world_size.config(validate="key", validatecommand=(reg_change_world_size, "%P"))
+    gui_world_size.grid(row=2, column=1)
 
     button = tk.Button(gui_new_window, text="New Game", command=gui_process_new_game_input)
-    button.grid(row=2, column=1)
+    button.grid(row=2, column=2, padx=5)
 
+    gui_new_window.configure(padx=5, pady=5)
     gui_new_window.focus_set()
     gui_new_window.mainloop()
 
