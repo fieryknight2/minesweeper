@@ -600,4 +600,9 @@ def main(args):
 
 
 if __name__ == '__main__':
-    main(sys.argv)  # runs the program
+    try:
+        main(sys.argv)  # runs the program
+    except KeyboardInterrupt:
+        print("\n\nRecieved KeyboardInterrupt")
+        print("Quitting...")
+        sys.exit(0)
