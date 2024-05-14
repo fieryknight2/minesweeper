@@ -603,6 +603,6 @@ if __name__ == '__main__':
     try:
         main(sys.argv)  # runs the program
     except KeyboardInterrupt:
-        print("\n\nRecieved KeyboardInterrupt")
+        print("\n\nReceived KeyboardInterrupt")
         print("Quitting...")
         sys.exit(0)
