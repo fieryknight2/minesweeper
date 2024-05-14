@@ -63,7 +63,7 @@ def _check_flagging(square: str, world_size: int, world_created: bool) -> int | 
     return FAIL
 
 
-def validate(square: str, world_created: bool, world_size: int) -> \
+def _validate(square: str, world_created: bool, world_size: int) -> \
             tuple[int, int] | tuple[str, int, int] | int:
     """Validates input from user into a location on the grid"""
     if len(square) < 2:
@@ -192,7 +192,7 @@ def process_square(square: str, world_size: int) -> int | tuple[int, int] | tupl
         return QUIT
     if square == "print":
         return PRINT
-    return validate(square, True, world_size)
+    return _validate(square, True, world_size)
 
 
 if __name__ == '__main__':

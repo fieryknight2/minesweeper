@@ -38,7 +38,7 @@
 import sys
 import time
 import random
-from functions import validate, print_world_item, generate_mines
+from functions import print_world_item, generate_mines
 from functions import count_nearby_mines, check_all_nearby, count_mines
 from functions import process_square
 from constants import ALPHABET, MAX_WORLD_SIZE, HIDDEN, FLAG, BOMB, CHARACTER_UNICODE, QUIT, FAIL, PRINT
