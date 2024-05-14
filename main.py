@@ -75,13 +75,13 @@ VERSION_STRING = "0.6.0"
 visible_world = []
 world = []
 
-mine_count = 25
-world_size = 15
+mine_count: int = 25
+world_size: int = 15
 
-print_white_space = False
-use_unicode = False
-use_color = False
-use_gui = False
+print_white_space: bool = False
+use_unicode: bool = False
+use_color: bool = False
+use_gui: bool = False
 
 if enable_tkinter:
     gui_buttons = []
@@ -99,12 +99,12 @@ if enable_tkinter:
     gui_mine_count: tk.Entry | None = None
     gui_world_size: tk.Entry | None = None
 
-random_seed = time.time()
+random_seed: float = time.time()
 
-start_time = 0
+start_time: int = 0
 
 
-def print_world():
+def print_world() -> None:
     """Prints the current minesweeper world in a grid"""
     if len(visible_world) > world_size or len(visible_world[1]) > world_size:
         return
@@ -139,7 +139,7 @@ def print_world():
     print("Printed current field.", end="\n\n")
 
 
-def create_world(starting_square):
+def create_world(starting_square: tuple[int, int]) -> None:
     """Generates the first world, and populates with mines"""
     global visible_world, world
     visible_world = [[HIDDEN for _ in range(world_size)] for _j in range(world_size)]
@@ -159,7 +159,7 @@ def create_world(starting_square):
     check(starting_square)
 
 
-def flag(valid_square):
+def flag(valid_square: tuple[str, int, int]) -> None:
     """Simple function for flagging a square"""
     global visible_world
     if visible_world[valid_square[1]][valid_square[2]] == HIDDEN:
@@ -169,7 +169,7 @@ def flag(valid_square):
         visible_world[valid_square[1]][valid_square[2]] = HIDDEN
 
 
-def check(valid_square: tuple[int, int]):
+def check(valid_square: tuple[int, int]) -> bool:
     """Function for processing a square and those around it"""
     global visible_world
 
@@ -197,7 +197,7 @@ def check(valid_square: tuple[int, int]):
     return False
 
 
-def force_check(valid_square: tuple[int, int]):
+def force_check(valid_square: tuple[int, int]) -> bool:
     """Force a check on all squares next to an already revealed square"""
     global visible_world
     bomb = 0
@@ -231,7 +231,7 @@ def force_check(valid_square: tuple[int, int]):
     return bomb
 
 
-def process_args(args):
+def process_args(args: list[str]) -> None:
     """Process command line arguments"""
     if len(args) <= 1:
         return
@@ -312,7 +312,7 @@ def process_args(args):
             sys.exit(1)
 
 
-def win():
+def win() -> bool:
     """Check for a win if the world has bombs left that aren't flags"""
     for r in range(len(world)):
         for c in range(len(world[r])):
@@ -327,7 +327,7 @@ def win():
     return True
 
 
-def gui_new_game():
+def gui_new_game() -> None:
     """Create a new game"""
     global gui_buttons, gui_has_played_first_move, random_seed, gui_counting_time
     gui_has_played_first_move = False
@@ -359,7 +359,7 @@ def gui_new_game():
             gui_buttons[i][j].grid(row=i, column=j)
 
 
-def gui_lose():
+def gui_lose() -> None:
     """Display a message to the user that they lost"""
     global gui_has_played_first_move, gui_lose_message, random_seed, gui_counting_time
     random_seed = time.time()
@@ -376,7 +376,7 @@ def gui_lose():
     gui_counting_time = False
 
 
-def gui_win():
+def gui_win() -> None:
     """Display a message to the user that they won"""
     global gui_has_played_first_move, gui_win_message, random_seed, gui_counting_time
     random_seed = time.time()
@@ -390,7 +390,7 @@ def gui_win():
     gui_counting_time = False
 
 
-def update_gui():
+def update_gui() -> None:
     """Update the GUI"""
     for i in range(world_size):
         for j in range(world_size):
@@ -413,7 +413,7 @@ def update_gui():
     gui_mines_left.configure(text=str(count_mines(world, visible_world)))
 
 
-def gui_update_time():
+def gui_update_time() -> None:
     """Update the GUI timer"""
     if gui_counting_time:
         seconds = round(time.time() - start_time)
@@ -427,7 +427,7 @@ def gui_update_time():
         gui_root.after(100, gui_update_time)
 
 
-def gui_click(i, j):
+def gui_click(i: int, j: int) -> None:
     """Click a tile"""
     global gui_has_played_first_move, gui_counting_time, start_time
 
@@ -465,7 +465,7 @@ def gui_click(i, j):
         gui_win()
 
 
-def gui_flag(i, j):
+def gui_flag(i: int, j: int) -> None:
     """Flag a tile"""
     global gui_has_played_first_move
 
@@ -480,7 +480,7 @@ def gui_flag(i, j):
         gui_win()
 
 
-def gui_change_mine_count(new_count):
+def gui_change_mine_count(new_count: str) -> bool:
     """Change the mine count"""
     if new_count == "":
         return True  # Enable an empty text input
@@ -489,7 +489,7 @@ def gui_change_mine_count(new_count):
     return True
 
 
-def gui_change_world_size(new_size):
+def gui_change_world_size(new_size: str) -> bool:
     """Change the world size"""
     if new_size == "":
         return True  # Enable an empty text input
@@ -498,7 +498,7 @@ def gui_change_world_size(new_size):
     return True
 
 
-def gui_process_new_game_input():
+def gui_process_new_game_input() -> None:
     """Process the new game input"""
     global mine_count, world_size
 
@@ -519,7 +519,7 @@ def gui_process_new_game_input():
     gui_new_game()
 
 
-def gui_new_game_window():
+def gui_new_game_window() -> None:
     """Create a new game window"""
     global gui_new_window, gui_mine_count, gui_world_size
 
@@ -557,7 +557,7 @@ def gui_new_game_window():
     gui_new_window.focus_set()
 
 
-def gui_main():
+def gui_main() -> None:
     """Alternative main loop for the GUI"""
     global start_time, gui_buttons, gui_world, gui_root, \
         gui_mines_left, gui_time_taken, gui_counting_time
@@ -616,7 +616,7 @@ def gui_main():
     gui_root.mainloop()
 
 
-def main(args):
+def main(args: list[str]) -> None:
     """Main function and entry point for the minesweeper program"""
     global start_time
     process_args(args)
