@@ -95,6 +95,11 @@ if enable_tkinter:
     gui_has_played_first_move = False
     gui_counting_time = False
 
+    # New game gui elements
+    gui_new_window: tk.Tk | None = None
+    gui_mine_count: tk.Entry | None = None
+    gui_world_size: tk.Entry | None = None
+
 random_seed = time.time()
 
 start_time = 0
@@ -458,6 +463,70 @@ def gui_flag(i, j):
         gui_win()
 
 
+def gui_change_mine_count(new_count):
+    """Change the mine count"""
+    global mine_count
+    mine_count = new_count
+
+
+def gui_change_world_size(new_size):
+    """Change the world size"""
+    global world_size
+    world_size = new_size
+
+
+def gui_process_new_game_input():
+    """Process the new game input"""
+    global mine_count, world_size
+
+    if gui_mine_count.get() == "" or not gui_mine_count.get().isnumeric() \
+            or int(gui_mine_count.get()) < 1 or int(gui_mine_count.get()) > MAX_WORLD_SIZE ** 2:
+        return
+    if gui_world_size.get() == "" or not gui_world_size.get().isnumeric() \
+            or int(gui_world_size.get()) < 3 or int(gui_world_size.get()) > MAX_WORLD_SIZE:
+        return
+
+    mine_count = int(gui_mine_count.get())
+    world_size = int(gui_world_size.get())
+
+    # close popup window
+    gui_new_window.destroy()
+
+    gui_new_game()
+
+
+
+def gui_new_game_window():
+    """Create a new game window"""
+    global gui_new_window, gui_mine_count, gui_world_size
+
+    gui_new_window = tk.Tk()
+    gui_new_window.title("New Game")
+
+    tk.Label(gui_new_window, text="New Game").grid(row=0, column=1)
+
+    options = tk.Frame(gui_new_window)
+
+    tk.Label(options, text="Mine Count").grid(row=0, column=0)
+
+    gui_mine_count = tk.Entry(options)
+    gui_mine_count.grid(row=1, column=0)
+
+    tk.Label(options, text="World Size").grid(row=0, column=1)
+
+    gui_world_size = tk.Entry(options)
+    gui_world_size.grid(row=1, column=1)
+
+    options.configure(padx=10, pady=3)
+    options.grid(row=1, column=1)
+
+    button = tk.Button(gui_new_window, text="New Game", command=gui_process_new_game_input)
+    button.grid(row=2, column=1)
+
+    gui_new_window.focus_set()
+    gui_new_window.mainloop()
+
+
 def gui_main():
     """Alternative main loop for the GUI"""
     global start_time, gui_buttons, gui_world, gui_root, \
@@ -475,7 +544,7 @@ def gui_main():
     # Create main buttons
     buttons = ttk.Frame(gui_root)
 
-    new_game_button = ttk.Button(buttons, text="New Game", command=gui_new_game)
+    new_game_button = ttk.Button(buttons, text="New Game", command=gui_new_game_window)
     new_game_button.grid(column=0, row=0)
 
     quit_button = ttk.Button(buttons, text="Quit", command=gui_root.quit)
@@ -489,14 +558,12 @@ def gui_main():
     # Create game timer and remaining mine count
     counts = ttk.Frame(gui_root)
 
-    timer_label = ttk.Label(counts, text="Timer")
-    timer_label.grid(column=0, row=0)
+    ttk.Label(counts, text="Timer").grid(column=0, row=0)
 
     gui_time_taken = ttk.Label(counts, text="0:00")
     gui_time_taken.grid(column=0, row=1)
 
-    gui_mine_count = ttk.Label(counts, text="Mines Left")
-    gui_mine_count.grid(column=1, row=0)
+    ttk.Label(counts, text="Mines Left").grid(column=1, row=0)
 
     gui_mines_left = ttk.Label(counts, text=str(mine_count))
     gui_mines_left.grid(column=1, row=1)
