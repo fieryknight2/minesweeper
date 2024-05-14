@@ -43,8 +43,6 @@ a tile with the right mouse button. To quit the game, click the Quit button.
 
 `--no-white-space`: Do not print white space between squares
 
-Experimental options:
-
 `--use-unicode`: Use unicode characters
 
 `--use-color`: Use color characters

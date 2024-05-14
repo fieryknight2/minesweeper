@@ -63,8 +63,6 @@ Usage: {} minesweeper.py
     -m, --mine-count: Set the number of mines
     -w, --world-size: Set the world size
     --no-white-space: Do not print white space between squares
-
-    Experimental options:
     --use-unicode: Use unicode characters
     --use-color: Use color characters
     --use-gui: Use the GUI
