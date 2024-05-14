@@ -32,7 +32,7 @@
 *
 * Author: Matthew Brown
 * Created May 5, 2023
-* Last Modified May 13, 2024
+* Last Modified May 14, 2024
 """
 import sys
 import time
@@ -70,7 +70,7 @@ Usage: {} minesweeper.py
     --use-gui: Use the GUI
 """
 
-VERSION_STRING = "0.6.0"
+VERSION_STRING = "1.0.0-alpha"
 
 visible_world: list[list[int]] = []
 world: list[list[int]] = []
@@ -531,28 +531,34 @@ def gui_new_game_window() -> None:
 
     # gui_new_window.geometry("400x100")
 
-    tk.Label(gui_new_window, text="New Game").grid(row=0, column=1)
+    tk.Label(gui_new_window, text="New Game Settings", font=("Sans Serif", 14, "bold")).pack(pady=5)
 
-    tk.Label(gui_new_window, text="Mine Count").grid(row=1, column=0)
+    layout = tk.Frame(gui_new_window)
+
+    tk.Label(layout, text="Mine Count", justify="left", width=10).grid(row=0, column=0)
 
     # Create the entry field for the mine count
-    gui_mine_count = tk.Entry(gui_new_window)
+    gui_mine_count = tk.Entry(layout, width=10, relief="solid")
     gui_mine_count.insert(0, str(mine_count))
     gui_mine_count.config(validate="key", validatecommand=(reg_change_mine_count, "%P"))
-    gui_mine_count.grid(row=2, column=0)
+    gui_mine_count.grid(row=1, column=0, padx=5)
 
-    tk.Label(gui_new_window, text="World Size").grid(row=1, column=1)
+    tk.Label(layout, text="World Size", justify="left", width=10).grid(row=0, column=1)
 
     # Create the entry field for the world size
-    gui_world_size = tk.Entry(gui_new_window)
+    gui_world_size = tk.Entry(layout, width=10, relief="solid")
     gui_world_size.insert(0, str(world_size))
     gui_world_size.config(validate="key", validatecommand=(reg_change_world_size, "%P"))
-    gui_world_size.grid(row=2, column=1)
+    gui_world_size.grid(row=1, column=1)
 
-    button = tk.Button(gui_new_window, text="New Game", command=gui_process_new_game_input)
-    button.grid(row=2, column=2, padx=5)
+    button = tk.Button(layout, text="New Game", command=gui_process_new_game_input)
+    button.configure(borderwidth=1, height=1, width=15)
+    button.configure(relief="solid", bg="white", highlightthickness=0)
+    button.grid(row=1, column=2, padx=10, pady=5)
 
-    gui_new_window.configure(padx=5, pady=5)
+    layout.pack()
+
+    gui_new_window.configure(padx=10, pady=10)
 
     gui_new_window.focus_set()
 
@@ -567,13 +573,7 @@ def gui_main() -> None:
     gui_root.geometry()
     gui_root.title('Minesweeper')
 
-    # Set the theme
-    # ttk.Style().theme_use("clam")
-
     # Create menu
-    text_label = ttk.Label(gui_root, text="Minesweeper")
-    text_label.grid(row=1)
-
     # Create main buttons
     buttons = ttk.Frame(gui_root)
 
