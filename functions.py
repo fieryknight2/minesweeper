@@ -136,17 +136,25 @@ def generate_mines(world: list[list[int]], avoid_square: tuple[int, int],
     return world
 
 
-def count_nearby_mines(world: list[list[int]], r: int, c: int) -> int:
-    mines_nearby = world[r - 1][c] if r > 0 else 0  # top
-    mines_nearby += world[r - 1][c - 1] if r > 0 and c > 0 else 0  # top left
-    mines_nearby += world[r - 1][c + 1] if r > 0 and c < len(world[r - 1]) - 1 else 0  # top right
-    mines_nearby += world[r + 1][c] if r < len(world) - 1 else 0  # bottom
-    mines_nearby += world[r + 1][c - 1] if r < len(world) - 1 and c > 0 else 0  # bottom left
-    mines_nearby += world[r + 1][c + 1] if r < len(world) - 1 and c < len(world[r + 1]) - 1 else 0  # bottom right
-    mines_nearby += world[r][c - 1] if c > 0 else 0  # left
-    mines_nearby += world[r][c + 1] if c < len(world[r]) - 1 else 0  # right
+def count_nearby(world: list[list[int]], r: int, c: int, comp: int) -> int:
+    nearby = world[r - 1][c] == comp if r > 0 else 0  # top
+    nearby += world[r - 1][c - 1] == comp if r > 0 and c > 0 else 0  # top left
+    nearby += world[r - 1][c + 1] == comp if r > 0 and c < len(world[r - 1]) - 1 else 0  # top right
+    nearby += world[r + 1][c] == comp if r < len(world) - 1 else 0  # bottom
+    nearby += world[r + 1][c - 1] == comp if r < len(world) - 1 and c > 0 else 0  # bottom left
+    nearby += world[r + 1][c + 1] == comp if r < len(world) - 1 and c < len(world[r + 1]) - 1 else 0  # bottom right
+    nearby += world[r][c - 1] == comp if c > 0 else 0  # left
+    nearby += world[r][c + 1] == comp if c < len(world[r]) - 1 else 0  # right
 
-    return mines_nearby
+    return nearby
+
+
+def count_nearby_mines(world: list[list[int]], r: int, c: int) -> int:
+    return count_nearby(world, r, c, 1)
+
+
+def count_nearby_flags(world: list[list[int]], r: int, c: int) -> int:
+    return count_nearby(world, r, c, FLAG)
 
 
 def check_all_nearby(world: list[list[int]], r: int, c: int,
