@@ -38,11 +38,11 @@
 import sys
 import time
 import random
-from functions import print_world_item, generate_mines
+from functions import print_world_item, generate_mines, count_nearby_flags, count_nearby
 from functions import count_nearby_mines, check_all_nearby, count_mines
 from functions import process_square
-from constants import ALPHABET, MAX_WORLD_SIZE, HIDDEN, FLAG, BOMB, CHARACTER_UNICODE, QUIT, FAIL, PRINT, \
-    MAX_GUI_WORLD_SIZE
+from constants import ALPHABET, MAX_WORLD_SIZE, HIDDEN, FLAG, BOMB, CHARACTER_UNICODE, \
+    QUIT, FAIL, PRINT, MAX_GUI_WORLD_SIZE
 
 enable_tkinter = True
 
@@ -72,7 +72,6 @@ Usage: {} minesweeper.py
 """
 
 VERSION_STRING = "0.5.0"
-
 
 visible_world = []
 world = []
@@ -371,6 +370,7 @@ def gui_lose():
 
     update_gui()
 
+    child: tk.Widget
     for child in gui_world.winfo_children():
         child.configure(state="disabled")
 
@@ -405,6 +405,10 @@ def update_gui():
                 gui_buttons[i][j].configure(text=str(visible_world[i][j]))
                 if visible_world[i][j] == 0:
                     gui_buttons[i][j].configure(state="disabled")
+                elif count_nearby(visible_world, i, j, HIDDEN) == 0:
+                    gui_buttons[i][j].configure(state="disabled")
+                else:
+                    gui_buttons[i][j].configure(state="normal")
 
     gui_mines_left.configure(text=str(count_mines(world, visible_world)))
 
