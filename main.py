@@ -55,7 +55,7 @@ except ImportError:
     ttk = None
 
 HELP_STRING = \
-    """Welcome to Minesweeper!
+    """Welcome to Minesweeper! Version {}
 Usage: {} minesweeper.py
     -h, --help: Print this help message
     -v, --version: Print the version
@@ -70,7 +70,7 @@ Usage: {} minesweeper.py
     --use-gui: Use the GUI
 """
 
-VERSION_STRING = "0.3.0"
+VERSION_STRING = "0.5.0"
 
 
 visible_world = []
@@ -233,7 +233,7 @@ def process_args(args):
         return
 
     if args[1] in ["-h", "--help"]:
-        print(HELP_STRING.format(args[0]))
+        print(HELP_STRING.format(VERSION_STRING, args[0]))
         sys.exit(0)
 
     if args[1] in ["-v", "--version"]:
@@ -258,11 +258,11 @@ def process_args(args):
                 world_size = int(args[i + 1])
                 if world_size > MAX_WORLD_SIZE:
                     print(f"World size must be less than {MAX_WORLD_SIZE}.")
-                    print(HELP_STRING.format(args[0]))
+                    print(HELP_STRING.format(VERSION_STRING, args[0]))
                     sys.exit(1)
                 print(f"World size set to {world_size}.")
             else:
-                print(HELP_STRING.format(args[0]))
+                print(HELP_STRING.format(VERSION_STRING, args[0]))
                 sys.exit(1)
             skip = True
         elif arg in ["-m", "--mine-count"]:
@@ -271,7 +271,7 @@ def process_args(args):
                 mine_count = int(args[i + 1])
                 if mine_count >= MAX_WORLD_SIZE ** 2:
                     print(f"Mine count must be less than {MAX_WORLD_SIZE ** 2}.")
-                    print(HELP_STRING.format(args[0]))
+                    print(HELP_STRING.format(VERSION_STRING, args[0]))
                     sys.exit(1)
                 print(f"Mine count set to {mine_count}.")
                 skip = True
@@ -292,7 +292,7 @@ def process_args(args):
             use_gui = True
         else:
             print(f"Unrecognized arguments: {arg}")
-            print(HELP_STRING.format(args[0]))
+            print(HELP_STRING.format(VERSION_STRING, args[0]))
             sys.exit(1)
 
 
