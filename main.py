@@ -404,6 +404,7 @@ def update_gui():
             else:
                 gui_buttons[i][j].configure(text=str(visible_world[i][j]))
                 if visible_world[i][j] == 0:
+                    gui_buttons[i][j].configure(text="")
                     gui_buttons[i][j].configure(state="disabled")
                 elif count_nearby(visible_world, i, j, HIDDEN) == 0:
                     gui_buttons[i][j].configure(state="disabled")
@@ -502,6 +503,7 @@ def gui_process_new_game_input():
     """Process the new game input"""
     global mine_count, world_size
 
+    # validation
     if gui_mine_count.get() == "" or not gui_mine_count.get().isnumeric() \
             or int(gui_mine_count.get()) < 1 or int(gui_mine_count.get()) > MAX_GUI_WORLD_SIZE ** 2:
         return
@@ -534,6 +536,7 @@ def gui_new_game_window():
 
     tk.Label(gui_new_window, text="Mine Count").grid(row=1, column=0)
 
+    # Create the entry field for the mine count
     gui_mine_count = tk.Entry(gui_new_window)
     gui_mine_count.insert(0, str(mine_count))
     gui_mine_count.config(validate="key", validatecommand=(reg_change_mine_count, "%P"))
@@ -541,6 +544,7 @@ def gui_new_game_window():
 
     tk.Label(gui_new_window, text="World Size").grid(row=1, column=1)
 
+    # Create the entry field for the world size
     gui_world_size = tk.Entry(gui_new_window)
     gui_world_size.insert(0, str(world_size))
     gui_world_size.config(validate="key", validatecommand=(reg_change_world_size, "%P"))
@@ -563,6 +567,9 @@ def gui_main():
     gui_root = tk.Tk()
     gui_root.geometry()
     gui_root.title('Minesweeper')
+
+    # Set the theme
+    # ttk.Style().theme_use("clam")
 
     # Create menu
     text_label = ttk.Label(gui_root, text="Minesweeper")
