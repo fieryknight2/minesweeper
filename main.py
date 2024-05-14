@@ -38,7 +38,7 @@
 import sys
 import time
 import random
-from functions import print_world_item, generate_mines, count_nearby_flags, count_nearby
+from functions import print_world_item, generate_mines, count_nearby
 from functions import count_nearby_mines, check_all_nearby, count_mines
 from functions import process_square
 from constants import ALPHABET, MAX_WORLD_SIZE, HIDDEN, FLAG, BOMB, CHARACTER_UNICODE, \
@@ -71,7 +71,7 @@ Usage: {} minesweeper.py
     --use-gui: Use the GUI
 """
 
-VERSION_STRING = "0.5.0"
+VERSION_STRING = "0.6.0"
 
 visible_world = []
 world = []
@@ -524,7 +524,7 @@ def gui_new_game_window():
     """Create a new game window"""
     global gui_new_window, gui_mine_count, gui_world_size
 
-    gui_new_window = tk.Tk()
+    gui_new_window = tk.Toplevel()
     gui_new_window.title("New Game")
 
     reg_change_world_size = gui_new_window.register(gui_change_world_size)
@@ -554,8 +554,8 @@ def gui_new_game_window():
     button.grid(row=2, column=2, padx=5)
 
     gui_new_window.configure(padx=5, pady=5)
+
     gui_new_window.focus_set()
-    gui_new_window.mainloop()
 
 
 def gui_main():
