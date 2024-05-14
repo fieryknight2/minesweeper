@@ -2,6 +2,7 @@
 
 ALPHABET = "abcdefghijklmnopqrstuvwxyz"
 MAX_WORLD_SIZE = 26
+MAX_GUI_WORLD_SIZE = 250
 MAX_REPEAT_WORLD_GEN = 100
 
 FLAG = -1

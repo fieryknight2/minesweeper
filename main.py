@@ -480,10 +480,10 @@ def gui_process_new_game_input():
     global mine_count, world_size
 
     if gui_mine_count.get() == "" or not gui_mine_count.get().isnumeric() \
-            or int(gui_mine_count.get()) < 1 or int(gui_mine_count.get()) > MAX_WORLD_SIZE ** 2:
+            or int(gui_mine_count.get()) < 1 or int(gui_mine_count.get()) > MAX_GUI_WORLD_SIZE ** 2:
         return
     if gui_world_size.get() == "" or not gui_world_size.get().isnumeric() \
-            or int(gui_world_size.get()) < 3 or int(gui_world_size.get()) > MAX_WORLD_SIZE:
+            or int(gui_world_size.get()) < 3 or int(gui_world_size.get()) > MAX_GUI_WORLD_SIZE:
         return
 
     mine_count = int(gui_mine_count.get())
