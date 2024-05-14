@@ -40,6 +40,7 @@ import time
 import random
 from functions import validate, print_world_item, generate_mines
 from functions import count_nearby_mines, check_all_nearby, count_mines
+from functions import process_square
 from constants import ALPHABET, MAX_WORLD_SIZE, HIDDEN, FLAG, BOMB, CHARACTER_UNICODE
 
 
@@ -529,29 +530,41 @@ def main(args):
 
     # start game
     print("Welcome to Minesweeper!")
-    square = input("Enter a starting square to begin: ").lower()
 
-    start_time = time.time()  # start game timer
+    # get user input
+    square = input("Enter a starting square to begin: ").lower()
+    while process_square(square):
+        square = input("Enter a starting square to begin: ").lower()
 
     validated_square = validate(square, False, world_size)
     while validated_square == -1:
         square = input("Enter a starting square to begin (Use algebraic notation): ").lower()
-        validated_square = validate(square, False, world_size)
 
+        while process_square(square):
+            square = input("Enter a starting square to begin (Use algebraic notation): ").lower()
+
+        validated_square = validate(square, False, world_size)
     create_world(validated_square)
 
+    # begin game loop
+    start_time = time.time()  # start game timer
     while True:
         print_world()
 
-        square = input("Enter a square (type 'quit' for quit): ").lower()
+        square = input("Enter a square (type 'help' for help): ").lower()
+
+        while process_square(square):
+            square = input("Enter a square (type 'help' for help): ").lower()
+
         validated_square = validate(square, True, world_size)
         while validated_square == -1:
             square = input("Enter a square (Use algebraic notation): ").lower()
+
+            while process_square(square):
+                square = input("Enter a square (Use algebraic notation): ").lower()
+
             validated_square = validate(square, True, world_size)
 
-        if validated_square == -2:  # quit
-            print("Quitting...")
-            break
         if validated_square[0] == "f":  # flag
             flag(validated_square)
         else:

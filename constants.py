@@ -24,3 +24,15 @@ CHARACTER_COLOR = {
     "hidden": "\033[33m",
     "reset": "\033[0m",
 }
+
+INGAME_HELP = \
+    """Commands:
+    help: Print this help message
+    quit: Quit the game
+    
+    How to Play:
+        Enter a square by first placing a letter and then a number indicating
+        a row and a column respectively (e.g. a1, b2, c3).
+
+        To flag a square, enter the letter f first (e.g. fa1, fb2, fc3).
+"""
