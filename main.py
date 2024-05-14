@@ -20,7 +20,6 @@
 * You may quit the game by typing 'quit' or by pressing Ctrl+C.
 *
 * How to Play - GUI Version -
-* As of now, the GUI version is still experimental and is not yet fully functional.
 * To play the GUI version of the game, run the program with the --use-gui flag. You can
 * begin by clicking any tile. The timer will then start ticking. To flag a tile, click
 * a tile with the right mouse button. To quit the game, click the Quit button.
