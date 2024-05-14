@@ -43,7 +43,7 @@ from functions import process_square
 from constants import ALPHABET, MAX_WORLD_SIZE, HIDDEN, FLAG, BOMB, CHARACTER_UNICODE, \
     QUIT, FAIL, PRINT, MAX_GUI_WORLD_SIZE
 
-enable_tkinter = True
+enable_tkinter: bool = True
 
 try:
     import tkinter as tk
@@ -72,8 +72,8 @@ Usage: {} minesweeper.py
 
 VERSION_STRING = "0.6.0"
 
-visible_world = []
-world = []
+visible_world: list[list[int]] = []
+world: list[list[int]] = []
 
 mine_count: int = 25
 world_size: int = 15
@@ -84,7 +84,7 @@ use_color: bool = False
 use_gui: bool = False
 
 if enable_tkinter:
-    gui_buttons = []
+    gui_buttons: list[list[tk.Button]] = []
     gui_world: tk.Frame | None = None
     gui_root: tk.Tk | None = None
     gui_lose_message: tk.Label | None = None
