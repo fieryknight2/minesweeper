@@ -44,7 +44,7 @@ def print_world_item(item: int, method: str) -> None:
 
 
 def _check_flagging(square: str, world_size: int, world_created: bool) -> int | tuple[str, int, int]:
-    """Checks if a square is flagged"""
+    """Checks if a square can be flagged"""
     if (square[0] in "Ff") and (len(square) == 3 or len(square) == 4) \
             and (not square[1].isnumeric()) and world_created:  # flag a square
         if not square[1] in ALPHABET:
