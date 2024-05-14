@@ -41,7 +41,8 @@ import random
 from functions import print_world_item, generate_mines
 from functions import count_nearby_mines, check_all_nearby, count_mines
 from functions import process_square
-from constants import ALPHABET, MAX_WORLD_SIZE, HIDDEN, FLAG, BOMB, CHARACTER_UNICODE, QUIT, FAIL, PRINT
+from constants import ALPHABET, MAX_WORLD_SIZE, HIDDEN, FLAG, BOMB, CHARACTER_UNICODE, QUIT, FAIL, PRINT, \
+    MAX_GUI_WORLD_SIZE
 
 enable_tkinter = True
 
@@ -261,10 +262,16 @@ def process_args(args):
             global world_size
             if len(args) >= i and str(args[i + 1]).isnumeric():
                 world_size = int(args[i + 1])
-                if world_size > MAX_WORLD_SIZE:
-                    print(f"World size must be less than {MAX_WORLD_SIZE}.")
-                    print(HELP_STRING.format(VERSION_STRING, args[0]))
-                    sys.exit(1)
+                if "--use-gui" in args and enable_tkinter:
+                    if world_size > MAX_GUI_WORLD_SIZE:
+                        print(f"World size must be less than {MAX_GUI_WORLD_SIZE}.")
+                        print(HELP_STRING.format(VERSION_STRING, args[0]))
+                        sys.exit(1)
+                else:
+                    if world_size > MAX_WORLD_SIZE:
+                        print(f"World size must be less than {MAX_WORLD_SIZE}.")
+                        print(HELP_STRING.format(VERSION_STRING, args[0]))
+                        sys.exit(1)
                 print(f"World size set to {world_size}.")
             else:
                 print(HELP_STRING.format(VERSION_STRING, args[0]))
@@ -274,10 +281,16 @@ def process_args(args):
             global mine_count
             if len(args) >= i and str(args[i + 1]).isnumeric():
                 mine_count = int(args[i + 1])
-                if mine_count >= MAX_WORLD_SIZE ** 2:
-                    print(f"Mine count must be less than {MAX_WORLD_SIZE ** 2}.")
-                    print(HELP_STRING.format(VERSION_STRING, args[0]))
-                    sys.exit(1)
+                if "--use-gui" in args and enable_tkinter:
+                    if mine_count >= MAX_GUI_WORLD_SIZE ** 2:
+                        print(f"Mine count must be less than {MAX_GUI_WORLD_SIZE ** 2}.")
+                        print(HELP_STRING.format(VERSION_STRING, args[0]))
+                        sys.exit(1)
+                else:
+                    if mine_count >= MAX_WORLD_SIZE ** 2:
+                        print(f"Mine count must be less than {MAX_WORLD_SIZE ** 2}.")
+                        print(HELP_STRING.format(VERSION_STRING, args[0]))
+                        sys.exit(1)
                 print(f"Mine count set to {mine_count}.")
                 skip = True
         elif arg == "--no-white-space":
