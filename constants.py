@@ -9,6 +9,7 @@ HIDDEN = -2
 BOMB = -3
 NOTHING = 0
 
+PRINT = 2
 FAIL = -1
 QUIT = -2
 
@@ -29,6 +30,7 @@ INGAME_HELP = \
     """Commands:
     help: Print this help message
     quit: Quit the game
+    print: Reprint the current world
     
     How to Play:
         Enter a square by first placing a letter and then a number indicating

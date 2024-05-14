@@ -41,8 +41,7 @@ import random
 from functions import validate, print_world_item, generate_mines
 from functions import count_nearby_mines, check_all_nearby, count_mines
 from functions import process_square
-from constants import ALPHABET, MAX_WORLD_SIZE, HIDDEN, FLAG, BOMB, CHARACTER_UNICODE
-
+from constants import ALPHABET, MAX_WORLD_SIZE, HIDDEN, FLAG, BOMB, CHARACTER_UNICODE, QUIT, FAIL, PRINT
 
 enable_tkinter = True
 
@@ -532,39 +531,52 @@ def main(args):
     print("Welcome to Minesweeper!")
 
     # get user input
-    square = input("Enter a starting square to begin: ").lower()
-    while process_square(square):
-        square = input("Enter a starting square to begin: ").lower()
+    square = input("Enter a starting square to begin (type 'help' for help): ").lower()
+    ps = process_square(square, world_size)
+    if ps == QUIT:
+        print("Quitting...")
+        return
+    if ps == PRINT:
+        print_world()
 
-    validated_square = validate(square, False, world_size)
-    while validated_square == -1:
-        square = input("Enter a starting square to begin (Use algebraic notation): ").lower()
+    while ps in [FAIL, 1, 2]:
+        square = input("Enter a starting square to begin (type 'help' for help): ").lower()
+        ps = process_square(square, world_size)
 
-        while process_square(square):
-            square = input("Enter a starting square to begin (Use algebraic notation): ").lower()
+        if ps == QUIT:
+            print("Quitting...")
+            return
+        if ps == PRINT:
+            print_world()
 
-        validated_square = validate(square, False, world_size)
-    create_world(validated_square)
+    create_world(ps)
 
     # begin game loop
     start_time = time.time()  # start game timer
     while True:
         print_world()
 
+        # get user input
         square = input("Enter a square (type 'help' for help): ").lower()
+        ps = process_square(square, world_size)
 
-        while process_square(square):
+        if ps == QUIT:
+            print("Quitting...")
+            return
+        if ps == PRINT:
+            print_world()
+        while ps in [FAIL, 1, PRINT]:
             square = input("Enter a square (type 'help' for help): ").lower()
 
-        validated_square = validate(square, True, world_size)
-        while validated_square == -1:
-            square = input("Enter a square (Use algebraic notation): ").lower()
+            ps = process_square(square, world_size)
+            if ps == QUIT:
+                print("Quitting...")
+                return
+            if ps == PRINT:
+                print_world()
 
-            while process_square(square):
-                square = input("Enter a square (Use algebraic notation): ").lower()
-
-            validated_square = validate(square, True, world_size)
-
+        # process user input
+        validated_square = ps
         if validated_square[0] == "f":  # flag
             flag(validated_square)
         else:

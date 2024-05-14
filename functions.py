@@ -2,7 +2,7 @@
 import sys
 from typing import Callable
 
-from constants import ALPHABET, HIDDEN, FLAG, CHARACTER_UNICODE, CHARACTER_COLOR
+from constants import ALPHABET, HIDDEN, FLAG, CHARACTER_UNICODE, CHARACTER_COLOR, PRINT
 from constants import MAX_REPEAT_WORLD_GEN, FAIL, QUIT, INGAME_HELP
 
 import random
@@ -183,14 +183,16 @@ def count_mines(world, visible_world):
     return m_count - f_count if m_count > f_count else 0
 
 
-def process_square(square: str) -> bool:
+def process_square(square: str, world_size: int) -> int | tuple[int, int] | tuple[str, int, int]:
     """Processes a square"""
     if square == "help":
         print(INGAME_HELP)
-        return True
+        return 1
     if square == "quit":
-        return True
-    return False
+        return QUIT
+    if square == "print":
+        return PRINT
+    return validate(square, True, world_size)
 
 
 if __name__ == '__main__':
