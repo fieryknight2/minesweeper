@@ -529,29 +529,27 @@ def gui_new_game_window() -> None:
 
     # gui_new_window.geometry("400x100")
 
-    tk.Label(gui_new_window, text="New Game Settings", font=("Sans Serif", 14, "bold")).pack(pady=5)
+    ttk.Label(gui_new_window, text="New Game Settings").pack(pady=5)
 
-    layout = tk.Frame(gui_new_window)
+    layout = ttk.Frame(gui_new_window)
 
-    tk.Label(layout, text="Mine Count", justify="left", width=10).grid(row=0, column=0)
+    ttk.Label(layout, text="Mine Count", justify="left", width=12).grid(row=0, column=0)
 
     # Create the entry field for the mine count
-    gui_mine_count = tk.Entry(layout, width=10, relief="solid")
+    gui_mine_count = ttk.Entry(layout, width=12)
     gui_mine_count.insert(0, str(mine_count))
     gui_mine_count.config(validate="key", validatecommand=(reg_change_mine_count, "%P"))
     gui_mine_count.grid(row=1, column=0, padx=5)
 
-    tk.Label(layout, text="World Size", justify="left", width=10).grid(row=0, column=1)
+    ttk.Label(layout, text="World Size", justify="left", width=12).grid(row=0, column=1)
 
     # Create the entry field for the world size
-    gui_world_size = tk.Entry(layout, width=10, relief="solid")
+    gui_world_size = ttk.Entry(layout, width=12)
     gui_world_size.insert(0, str(world_size))
     gui_world_size.config(validate="key", validatecommand=(reg_change_world_size, "%P"))
     gui_world_size.grid(row=1, column=1)
 
-    button = tk.Button(layout, text="New Game", command=gui_process_new_game_input)
-    button.configure(borderwidth=1, height=1, width=15)
-    button.configure(relief="solid", bg="white", highlightthickness=0)
+    button = ttk.Button(layout, text="New Game", command=gui_process_new_game_input)
     button.grid(row=1, column=2, padx=10, pady=5)
 
     layout.pack()
