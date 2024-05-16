@@ -198,6 +198,8 @@ def process_square(square: str, world_size: int) -> int | tuple[int, int] | tupl
         return 1
     if square == "quit":
         return QUIT
+    if square == "exit":
+        return QUIT
     if square == "print":
         return PRINT
     return _validate(square, True, world_size)
