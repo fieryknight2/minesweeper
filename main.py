@@ -41,7 +41,7 @@ from functions import print_world_item, generate_mines, count_nearby
 from functions import count_nearby_mines, check_all_nearby, count_mines
 from functions import process_square
 from constants import ALPHABET, MAX_WORLD_SIZE, HIDDEN, FLAG, BOMB, CHARACTER_UNICODE, \
-    QUIT, FAIL, PRINT, MAX_GUI_WORLD_SIZE
+    QUIT, FAIL, PRINT, MAX_GUI_WORLD_SIZE, BAD_FLAG
 
 enable_tkinter: bool = True
 
@@ -96,6 +96,7 @@ if enable_tkinter:
     gui_new_window: tk.Tk | None = None
     gui_mine_count: tk.Entry | None = None
     gui_world_size: tk.Entry | None = None
+    gui_lose_state: bool = False
 
 random_seed: float = time.time()
 
@@ -122,6 +123,21 @@ def print_world() -> None:
     for letter in range(len(visible_world)):
         print(ALPHABET[letter].upper(), end=" ")
     print()
+
+    # Check if the game is over and print flags that are wrong
+    print_wrong_flag = False
+    for r in visible_world:
+        for c in r:
+            if c == BOMB:
+                print_wrong_flag = True
+                break
+        if print_wrong_flag:
+            break
+    if print_wrong_flag:
+        for i, row in enumerate(visible_world):
+            for j, item in enumerate(row):
+                if item == FLAG and world[i][j] == 0:
+                    visible_world[i][j] = BAD_FLAG
 
     # print rows
     for i, row in enumerate(visible_world):
@@ -327,7 +343,7 @@ def win() -> bool:
 
 def gui_new_game() -> None:
     """Create a new game"""
-    global gui_buttons, gui_has_played_first_move, random_seed, gui_counting_time
+    global gui_buttons, gui_has_played_first_move, random_seed, gui_counting_time, gui_lose_state
     gui_has_played_first_move = False
     gui_counting_time = False
 
@@ -356,15 +372,18 @@ def gui_new_game() -> None:
             gui_buttons[i][j]["width"] = 2
             gui_buttons[i][j].grid(row=i, column=j)
 
+    gui_lose_state = False
+
 
 def gui_lose() -> None:
     """Display a message to the user that they lost"""
-    global gui_has_played_first_move, gui_lose_message, random_seed, gui_counting_time
+    global gui_has_played_first_move, gui_lose_message, random_seed, gui_counting_time, gui_lose_state
     random_seed = time.time()
 
     gui_lose_message = tk.Label(gui_root, text="You have lost!")
     gui_lose_message.grid(row=0)
 
+    gui_lose_state = True
     update_gui()
 
     child: tk.Widget
@@ -407,6 +426,11 @@ def update_gui() -> None:
                     gui_buttons[i][j].configure(state="disabled")
                 else:
                     gui_buttons[i][j].configure(state="normal")
+            if gui_lose_state:
+                if visible_world[i][j] == FLAG and world[i][j] == 0:
+                    gui_buttons[i][j].destroy()
+                    gui_buttons[i][j] = ttk.Label(gui_world, text=CHARACTER_UNICODE["bad_flag"], foreground="red")
+                    gui_buttons[i][j].grid(row=i, column=j)
 
     gui_mines_left.configure(text=str(count_mines(world, visible_world)))
 
@@ -568,6 +592,8 @@ def gui_main() -> None:
     gui_root = tk.Tk()
     gui_root.geometry()
     gui_root.title('Minesweeper')
+
+    ttk.Style().theme_use("vista")
 
     # Create menu
     # Create main buttons

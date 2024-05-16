@@ -37,6 +37,8 @@ def print_world_item(item: int, method: str) -> None:
         _print_char("flag", method, "F")
     elif item == -3:
         _print_char("bomb", method, "B")
+    elif item == -4:
+        _print_char("bad_flag", method, "L")
     elif item == 0:  # 0  means nothing
         print(" ", end=" ")
     else:  # Remaining items are numbers to print
