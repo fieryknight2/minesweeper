@@ -556,7 +556,7 @@ def gui_new_game_window() -> None:
     # gui_new_window.geometry("400x100")
 
     ttk.Label(gui_new_window, text="New Game Settings",
-              font=(ttk.Style().lookup("TButton", "font"), 8, "bold")).pack(pady=5)
+              font=(ttk.Style().lookup("TButton", "font"), 10, "bold")).pack(pady=5)
 
     layout = ttk.Frame(gui_new_window)
 
