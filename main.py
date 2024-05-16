@@ -416,7 +416,9 @@ def update_gui() -> None:
             elif visible_world[i][j] == FLAG:
                 gui_buttons[i][j].configure(text=CHARACTER_UNICODE["flag"])
             elif visible_world[i][j] == BOMB:
-                gui_buttons[i][j].configure(text=CHARACTER_UNICODE["bomb"])
+                gui_buttons[i][j].destroy()
+                gui_buttons[i][j] = ttk.Label(gui_world, text=CHARACTER_UNICODE["bomb"])
+                gui_buttons[i][j].grid(row=i, column=j)
             else:
                 gui_buttons[i][j].configure(text=str(visible_world[i][j]))
                 if visible_world[i][j] == 0:
@@ -553,7 +555,8 @@ def gui_new_game_window() -> None:
 
     # gui_new_window.geometry("400x100")
 
-    ttk.Label(gui_new_window, text="New Game Settings").pack(pady=5)
+    ttk.Label(gui_new_window, text="New Game Settings",
+              font=(ttk.Style().lookup("TButton", "font"), 8, "bold")).pack(pady=5)
 
     layout = ttk.Frame(gui_new_window)
 
@@ -574,7 +577,7 @@ def gui_new_game_window() -> None:
     gui_world_size.grid(row=1, column=1)
 
     button = ttk.Button(layout, text="New Game", command=gui_process_new_game_input)
-    button.grid(row=1, column=2, padx=10, pady=5)
+    button.grid(row=1, column=2, padx=5, pady=5)
 
     layout.pack()
 
@@ -600,7 +603,7 @@ def gui_main() -> None:
     buttons = ttk.Frame(gui_root)
 
     new_game_button = ttk.Button(buttons, text="New Game", command=gui_new_game_window)
-    new_game_button.grid(column=0, row=0)
+    new_game_button.grid(column=0, row=0, pady=5)
 
     quit_button = ttk.Button(buttons, text="Quit", command=gui_root.quit)
     quit_button.grid(column=1, row=0)
