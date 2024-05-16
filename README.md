@@ -49,6 +49,10 @@ a tile with the right mouse button. To quit the game, click the Quit button.
 
 `--use-gui`: Use the GUI
 
+## TODO
+
+Fix alignment issues with Unicode characters
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE.md) file for details
