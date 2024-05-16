@@ -73,8 +73,8 @@ VERSION_STRING = "1.0.0-alpha"
 visible_world: list[list[int]] = []
 world: list[list[int]] = []
 
-mine_count: int = 25
-world_size: int = 15
+mine_count: int = 99
+world_size: int = 23
 
 print_white_space: bool = False
 use_unicode: bool = False
