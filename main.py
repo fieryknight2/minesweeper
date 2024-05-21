@@ -8,14 +8,14 @@
 * to actually finish a project I have created. I started this project
 * in 2023 for fun, and I have recently started working on it again with
 * the help of AI to increase my knowledge of Python and practical coding.
-* This game was originally designed to be a simple console based, minesweeper
+* This game was originally designed to be a simple console-based, minesweeper
 * implementation, but I decided to add a GUI and unicode support for fun.
 *
 *
 * How to Play - Console Version -
 * To play the console version of the game, enter a square to get started.
 * Squares are denoted by a letter and a number respectively, for example, a1, b2, c3
-* This is akin to algebraic notation from chess which is a popular game I like.
+* This is akin to algebraic notation from chess, which is a popular game I like.
 * to flag a square, enter the letter f followed by the square number, for example, ff3.
 * You may quit the game by typing 'quit' or by pressing Ctrl+C.
 *
@@ -34,6 +34,7 @@
 * Created May 5, 2023
 * Last Modified May 20, 2024
 """
+
 import sys
 import time
 import random
@@ -327,7 +328,7 @@ def process_args(args: list[str]) -> None:
 
 
 def win() -> bool:
-    """Check for a win if the world has bombs left that aren't flags"""
+    """Check for a win if the world has any remaining bombs that aren't flagged"""
     for r in range(len(world)):
         for c in range(len(world[r])):
             if world[r][c] == 1 and not visible_world[r][c] == FLAG:
@@ -441,7 +442,6 @@ def update_gui() -> None:
                     gui_buttons[i][j].destroy()
                     gui_buttons[i][j] = ttk.Label(gui_world, text="")
                     gui_buttons[i][j].grid(row=i, column=j)
-
 
     gui_mines_left.configure(text=str(count_mines(world, visible_world)))
 
