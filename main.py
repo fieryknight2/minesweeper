@@ -32,7 +32,7 @@
 *
 * Author: Matthew Brown
 * Created May 5, 2023
-* Last Modified May 14, 2024
+* Last Modified May 20, 2024
 """
 import sys
 import time
@@ -433,6 +433,15 @@ def update_gui() -> None:
                     gui_buttons[i][j].destroy()
                     gui_buttons[i][j] = ttk.Label(gui_world, text=CHARACTER_UNICODE["bad_flag"], foreground="red")
                     gui_buttons[i][j].grid(row=i, column=j)
+                if visible_world[i][j] == HIDDEN and world[i][j] == 1:
+                    gui_buttons[i][j].destroy()
+                    gui_buttons[i][j] = ttk.Label(gui_world, text=CHARACTER_UNICODE["bomb"], foreground="red")
+                    gui_buttons[i][j].grid(row=i, column=j)
+                elif visible_world[i][j] == 0:
+                    gui_buttons[i][j].destroy()
+                    gui_buttons[i][j] = ttk.Label(gui_world, text="")
+                    gui_buttons[i][j].grid(row=i, column=j)
+
 
     gui_mines_left.configure(text=str(count_mines(world, visible_world)))
 
