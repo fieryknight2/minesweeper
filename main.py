@@ -605,8 +605,6 @@ def gui_main() -> None:
     gui_root.geometry()
     gui_root.title('Minesweeper')
 
-    ttk.Style().theme_use("vista")
-
     # Create menu
     # Create main buttons
     buttons = ttk.Frame(gui_root)
