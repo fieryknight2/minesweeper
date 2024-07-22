@@ -6,3 +6,9 @@ __pycache__
 *.iml
 *.xml
 /qodana.yaml
+
+
+# Python virtual environments
+.venv
+venv
+virtualenv
