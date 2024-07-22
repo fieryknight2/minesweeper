@@ -421,13 +421,16 @@ def update_gui() -> None:
                 gui_buttons[i][j] = ttk.Label(gui_world, text=CHARACTER_UNICODE["bomb"])
                 gui_buttons[i][j].grid(row=i, column=j)
             else:
-                gui_buttons[i][j].configure(text=str(visible_world[i][j]))
                 if visible_world[i][j] == 0:
-                    gui_buttons[i][j].configure(text="")
-                    gui_buttons[i][j].configure(state="disabled")
-                elif count_nearby(visible_world, i, j, HIDDEN) == 0:
-                    gui_buttons[i][j].configure(state="disabled")
+                    if not isinstance(gui_buttons[i][j], ttk.Label):
+                        gui_buttons[i][j].destroy()
+                        gui_buttons[i][j] = ttk.Label(gui_world, text="")
+                        gui_buttons[i][j].grid(row=i, column=j)
+
+                    # gui_buttons[i][j].configure(text="")
+                    # gui_buttons[i][j].configure(state="disabled")
                 else:
+                    gui_buttons[i][j].configure(text=str(visible_world[i][j]))
                     gui_buttons[i][j].configure(state="normal")
             if gui_lose_state:
                 if visible_world[i][j] == FLAG and world[i][j] == 0:
@@ -438,10 +441,10 @@ def update_gui() -> None:
                     gui_buttons[i][j].destroy()
                     gui_buttons[i][j] = ttk.Label(gui_world, text=CHARACTER_UNICODE["bomb"], foreground="red")
                     gui_buttons[i][j].grid(row=i, column=j)
-                elif visible_world[i][j] == 0:
-                    gui_buttons[i][j].destroy()
-                    gui_buttons[i][j] = ttk.Label(gui_world, text="")
-                    gui_buttons[i][j].grid(row=i, column=j)
+                # elif visible_world[i][j] == 0:
+                #    gui_buttons[i][j].destroy()
+                #    gui_buttons[i][j] = ttk.Label(gui_world, text="")
+                #    gui_buttons[i][j].grid(row=i, column=j)
 
     gui_mines_left.configure(text=str(count_mines(world, visible_world)))
 
