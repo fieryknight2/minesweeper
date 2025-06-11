@@ -1,0 +1,29 @@
+{
+    "constants": {
+        "MAX_GUI_WORLD_SIZE": 250
+    },
+    "game_symbols": {
+        "FLAG": "F",
+        "HIDDEN": "#",
+        "BOMB": "B",
+        "BAD_FLAG": "L",
+        "EMPTY": "."
+    },
+    "unicode_characters": {
+        "bomb": "\u2620",
+        "flag": "\u2691",
+        "hidden": "\u25A0",
+        "bad_flag": "\u2690"
+    },
+    "color_codes": {
+        "bomb": "\u001b[31m",
+        "flag": "\u001b[32m",
+        "bad_flag": "\u001b[35m",
+        "hidden": "\u001b[34m",
+        "reset": "\u001b[0m"
+    },
+    "defaults": {
+        "use_color": true,
+        "use_unicode": true
+    }
+}
