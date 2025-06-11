@@ -1,6 +1,6 @@
 {
     "constants": {
-        "MAX_GUI_WORLD_SIZE": 250
+        "MAX_GUI_WORLD_SIZE": 50
     },
     "game_symbols": {
         "FLAG": "F",
