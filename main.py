@@ -32,17 +32,14 @@
 *
 * Author: Matthew Brown
 * Created May 5, 2023
-* Last Modified May 20, 2024
+* Last Modified June 10, 2025
 """
+VERSION_STRING = "1.1.0.0"
 
 import sys
 import time
 import random
-from functions import print_world_item, generate_mines, count_nearby
-from functions import count_nearby_mines, check_all_nearby, count_mines
-from functions import process_square
-from constants import ALPHABET, MAX_WORLD_SIZE, HIDDEN, FLAG, BOMB, CHARACTER_UNICODE, \
-    QUIT, FAIL, PRINT, MAX_GUI_WORLD_SIZE, BAD_FLAG
+import argparse
 
 enable_tkinter: bool = True
 
@@ -55,32 +52,285 @@ except ImportError:
     tk = None
     ttk = None
 
-HELP_STRING = \
-    """Welcome to Minesweeper! Version {}
-Usage: {} minesweeper.py
-    -h, --help: Print this help message
-    -v, --version: Print the version
-    -s, --seed: Set the random seed
-    -m, --mine-count: Set the number of mines
-    -w, --world-size: Set the world size
-    --no-white-space: Do not print white space between squares
-    --use-unicode: Use unicode characters
-    --use-color: Use color characters
-    --use-gui: Use the GUI
+# ---------- Constants ----------
+
+class Constants:
+    MAX_GUI_WORLD_SIZE = 250
+
+    FLAG = 'F'
+    HIDDEN = 'X'
+    BOMB = 'B'
+    BAD_FLAG = 'L'
+    EMPTY = '.'
+
+    MENU_QUIT = 1
+    MENU_DISPLAY = 2
+    MENU_ERROR = 3
+    MENU_HELP = 4
+    MENU_ENABLE_COLOR = 5
+    MENU_ENABLE_UNICODE = 6
+
+    CHARACTER_UNICODE = {
+        "bomb": "💣",
+        "flag": "\u2691",
+        "hidden": "\u2588",
+        "bad_flag": "🚩",
+    }
+
+    CHARACTER_COLOR = {
+        "bomb": "\033[31m",  # red
+        "flag": "\033[32m",  # green
+        "bad_flag": "\033[35m",  # pink
+        "hidden": "\033[34m",  # blue
+        "reset": "\033[0m",  # reset
+    }
+
+    MENU_HELP_STRING = """Commands:
+    help: Print this help message
+    quit: Quit the game
+    print: Reprint the current world
+    color: Enable color
+    unicode: Enable unicode
+
+    How to Play:
+        Enter a square by first placing a letter and then a number indicating
+        a row and a column respectively (e.g. a1, b2, c3).
+
+        To flag a square, enter the letter f first (e.g. fa1, fb2, fc3).
+
+    Representation:
+        - Bomb: B
+        - Hidden: X
+        - Flag: F
+        - Wrong Flag: L
 """
 
-VERSION_STRING = "1.0.0-alpha"
+class World:
+    MAX_WORLD_SIZE_X = 26
+    MAX_WORLD_SIZE_Y = 100
 
-visible_world: list[list[int]] = []
-world: list[list[int]] = []
+    EASY_SIZE_X = 9
+    EASY_SIZE_Y = 9
+    EASY_MINE_COUNT = 10
 
-mine_count: int = 99
-world_size: int = 23
+    def __init__(self, **kwargs):
+        """
+        :param kwargs:
+            Potential defaults to edit while creating the world can be supplied here:
+            mine_count - The mine count for the created world
+            world_size_x - The width of the world
+            world_size_y - The height of the world
 
-print_white_space: bool = False
-use_unicode: bool = False
-use_color: bool = False
-use_gui: bool = False
+            Display options can also be set:
+            use_color - Use color while displaying the world
+            use_unicode - Use Unicode while displaying the world
+            use_gui - Use the tkinter GUI
+        """
+        self.has_generated = False
+        self.visible: list[list[str]] = []
+        self.mines: list[list[bool]] = []
+
+        self.mine_count: int = 9 if "mine_count" not in kwargs.keys() else kwargs["mine_count"]
+        self.world_size_x: int = 10 if "world_size_x" not in kwargs.keys() else kwargs["world_size_x"]
+        self.world_size_y: int = 10 if "world_size_y" not in kwargs.keys() else kwargs["world_size_y"]
+
+        self.use_color = False if "use_color" not in kwargs.keys() else kwargs["use_color"]
+        self.use_unicode = False if "use_unicode" not in kwargs.keys() else kwargs["use_unicode"]
+        # self.use_gui = False if "use_gui" not in kwargs.keys() else kwargs["use_gui"]
+
+        self.display_empty = False if "display_empty" not in kwargs.keys() else kwargs["display_empty"]
+
+        self.start_time = 0
+        self.paused_for = 0
+
+    def generate(self, start_square: tuple[int, int] | None) -> None:
+        if start_square is not None:
+            if not self.in_bounds(start_square[0], start_square[1]):
+                print(f"Error occurred while generating world: Incorrect position for start square ({
+                        start_square[0]}, {start_square[1]})")
+
+        if self.mine_count >= ((self.world_size_x * self.world_size_y) - 1):
+            print("Error occurred while generating world: Too many mines!")
+            # print(f"{self.mine_count}, {self.world_size_x}, {self.world_size_y}")
+            return
+
+        self.mines = [[False for _ in range(self.world_size_x)] for _ in range(self.world_size_y)]
+        self.visible = [[Constants.HIDDEN for _ in range(self.world_size_x)] for _ in range(self.world_size_y)]
+
+        # Ensure start square does not have a mine on it
+        if start_square:
+            self.mines[start_square[1]][start_square[0]] = True
+
+        for _ in range(self.mine_count):
+            x, y = random.randint(0, self.world_size_x - 1), random.randint(0, self.world_size_y - 1)
+            while self.mines[x][y]:
+                x, y = random.randint(0, self.world_size_x - 1), random.randint(0, self.world_size_y - 1)
+
+            self.mines[x][y] = True
+
+        if start_square:
+            self.mines[start_square[1]][start_square[0]] = False
+
+            self.check_square(start_square[0], start_square[1])
+
+        self.has_generated = True
+        self.start_time = time.time()
+
+    def display(self) -> None:
+        """Display the world"""
+        if not self.has_generated:
+            raise Exception("World has not been generated")
+
+        print("  ", end="")
+        for i in range(self.world_size_x):
+            if i < 26:
+                print(f" {chr(i + ord('a'))}", end="")
+            else:
+                # TODO
+                pass
+
+        print()
+        for y in range(self.world_size_y):
+            print(f"{y + 1:2}", end="")
+            for x in range(self.world_size_x):
+                dp_value = self.visible[y][x]
+
+                if dp_value == Constants.EMPTY and not self.display_empty:
+                    dp_value = ' '
+
+                display_set = {
+                    "bomb": Constants.BOMB,
+                    "flag": Constants.FLAG,
+                    "hidden": Constants.HIDDEN,
+                    "bad_flag": Constants.BAD_FLAG,
+                }
+
+                if self.use_unicode:
+                    display_set = Constants.CHARACTER_UNICODE
+
+                match dp_value:
+                    case Constants.BOMB:
+                        dp_value = display_set["bomb"]
+                    case Constants.FLAG:
+                        dp_value = display_set["flag"]
+                    case Constants.HIDDEN:
+                        dp_value = display_set["hidden"]
+                    case Constants.BAD_FLAG:
+                        dp_value = display_set["bad_flag"]
+                print(" ", end="")
+
+                if self.use_color:
+                    match dp_value:
+                        case Constants.BOMB:
+                            print(Constants.CHARACTER_COLOR["bomb"], end="")
+                        case Constants.FLAG:
+                            print(Constants.CHARACTER_COLOR["flag"], end="")
+                        case Constants.HIDDEN:
+                            print(Constants.CHARACTER_COLOR["hidden"], end="")
+                        case Constants.BAD_FLAG:
+                            print(Constants.CHARACTER_COLOR["bad_flag"], end="")
+                print(f"{dp_value}", end="")
+
+                if self.use_color:
+                    print(Constants.CHARACTER_COLOR["reset"], end="")
+            print()
+
+        print()
+
+    def display_all(self):
+        vis = self.visible
+        for x in range(self.world_size_x):
+            for y in range(self.world_size_y):
+                self.check_square(x, y)
+
+                if self.visible[y][x] == Constants.FLAG and self.mines[x][y]:
+                    self.visible[y][x] = Constants.BAD_FLAG
+
+        self.display()
+
+        self.visible = vis
+
+    def check_square(self, x: int, y: int) -> bool:
+        """Check the given square for mines and clear it on the visible plane. Ignores flagged squares"""
+        if not self.in_bounds(x, y):
+            return False
+
+        if self.visible[y][x] in [Constants.FLAG, Constants.EMPTY]:
+            return False
+
+        if self.visible[y][x] == Constants.HIDDEN:
+            if self.mines[y][x]:
+                self.visible[y][x] = Constants.BOMB
+                return True
+
+            count = self.count_nearby(x, y, Constants.BOMB)
+
+            if count == 0:
+                self.visible[y][x] = Constants.EMPTY
+                for X in range(x - 1, x + 2):
+                    for Y in range(y - 1, y + 2):
+                        if (X == x and Y == y) or not self.in_bounds(X, Y):
+                            continue
+
+                        if self.visible[Y][X] == Constants.HIDDEN:
+                            self.check_square(X, Y)
+            else:
+                self.visible[y][x] = str(count)
+
+        elif self.visible[y][x].isnumeric():
+            if self.count_nearby(x, y, Constants.FLAG) == int(self.visible[y][x]):
+                for X in range(x - 1, x + 2):
+                    for Y in range(y - 1, y + 2):
+                        if (X == x and Y == y) or not self.in_bounds(X, Y):
+                            continue
+
+                        if self.visible[X][Y] == Constants.HIDDEN:
+                            if self.check_square(X, Y):
+                                return True
+
+        return False
+
+    def flag_square(self, x: int, y: int) -> None:
+        """Toggle flag on the given square for mines"""
+        if self.visible[y][x] == Constants.FLAG:
+            self.visible[y][x] = Constants.HIDDEN
+        elif self.visible[y][x] == Constants.HIDDEN:
+            self.visible[y][x] = Constants.FLAG
+
+    def check_win(self) -> bool:
+        for x in range(self.world_size_x):
+            for y in range(self.world_size_y):
+                if self.visible[y][x] == Constants.HIDDEN:
+                    return False
+                if self.visible[y][x] == Constants.FLAG and not self.mines[y][x]:
+                    return False
+
+        return True
+
+    def count_unflagged_mines(self) -> int:
+        count = 0
+        for x in range(self.world_size_x):
+            for y in range(self.world_size_y):
+                if self.mines[y][x] and self.visible[y][x] != Constants.FLAG:
+                    count += 1
+
+        return count
+
+    def count_nearby(self, x: int, y: int, value: str) -> int:
+        count = 0
+        for X in range(x - 1, x + 2):
+            for Y in range(y - 1, y + 2):
+                if self.in_bounds(X, Y) and not (X == x and Y == y):
+                    match value:
+                        case Constants.FLAG:
+                            count += self.visible[Y][X] == Constants.FLAG
+                        case Constants.BOMB:
+                            count += self.mines[Y][X]
+
+        return count
+
+    def in_bounds(self, x, y):
+        return self.world_size_x > x >= 0 and self.world_size_y > y >= 0
 
 if enable_tkinter:
     gui_buttons: list[list[tk.Button]] = []
@@ -101,245 +351,38 @@ if enable_tkinter:
 
 random_seed: float = time.time()
 
-start_time: int = 0
 
-
-def print_world() -> None:
-    """Prints the current minesweeper world in a grid"""
-    if len(visible_world) > world_size or len(visible_world[1]) > world_size:
-        return
-
-    if print_white_space:
-        print("\n" * 15)  # add some space
-
-    if use_unicode:
-        method = "use_unicode"
-    elif use_color:
-        method = "use_color"
-    else:
-        method = "default"
-
-    # print header
-    print(" " * 4, end="")
-    for letter in range(len(visible_world)):
-        print(ALPHABET[letter].upper(), end=" ")
-    print()
-
-    # Check if the game is over and print flags that are wrong
-    print_wrong_flag = False
-    for r in visible_world:
-        for c in r:
-            if c == BOMB:
-                print_wrong_flag = True
-                break
-        if print_wrong_flag:
-            break
-    if print_wrong_flag:
-        for i, row in enumerate(visible_world):
-            for j, item in enumerate(row):
-                if item == FLAG and world[i][j] == 0:
-                    visible_world[i][j] = BAD_FLAG
-
-    # print rows
-    for i, row in enumerate(visible_world):
-        if len(row) > world_size:
-            print("ERROR: Incorrect sizing")
-            sys.exit(1)
-
-        form = "0" + str(i + 1)
-        print(form[len(form) - 2:], end=": ")
-        for item in row:
-            print_world_item(item, method)
-        print()
-    print("Printed current field.", end="\n\n")
-
-
-def create_world(starting_square: tuple[int, int]) -> None:
-    """Generates the first world, and populates with mines"""
-    global visible_world, world
-    visible_world = [[HIDDEN for _ in range(world_size)] for _j in range(world_size)]
-    world = [[0 for _ in range(world_size)] for _j in range(world_size)]
-
-    random.seed(random_seed)
-
-    if mine_count >= world_size ** 2:  # Backup for if validation fails somewhere
-        world = [[1 for _ in range(world_size)] for _j in range(world_size)]
-        world[starting_square[0]][starting_square[1]] = 0
-        check(starting_square)
-
-        return
-
-    world = generate_mines(world, starting_square, mine_count, world_size)
-
-    check(starting_square)
-
-
-def flag(valid_square: tuple[str, int, int]) -> None:
-    """Simple function for flagging a square"""
-    global visible_world
-    if visible_world[valid_square[1]][valid_square[2]] == HIDDEN:
-        visible_world[valid_square[1]][valid_square[2]] = FLAG
-        # print(visible_world[valid_square[1]][valid_square[2]])
-    elif visible_world[valid_square[1]][valid_square[2]] == FLAG:
-        visible_world[valid_square[1]][valid_square[2]] = HIDDEN
-
-
-def check(valid_square: tuple[int, int]) -> bool:
-    """Function for processing a square and those around it"""
-    global visible_world
-
-    r, c = valid_square  # for readability
-
-    if r < 0 or c < 0 or \
-            r >= world_size or c >= world_size:  # out of bounds
-        return False
-
-    if visible_world[r][c] == FLAG:
-        # square is flagged, ignore
-        return False
-
-    if world[r][c] == 1:  # check for a mine
-        visible_world[r][c] = BOMB
-        return True
-
-    bombs_nearby = count_nearby_mines(world, r, c)
-
-    visible_world[r][c] = bombs_nearby
-
-    if bombs_nearby == 0:
-        check_all_nearby(visible_world, r, c, check)
-
-    return False
-
-
-def force_check(valid_square: tuple[int, int]) -> bool:
-    """Force a check on all squares next to an already revealed square"""
-    global visible_world
-    bomb = 0
-    r, c = valid_square  # for readability
-    if visible_world[valid_square[0]][valid_square[1]] > 0:
-        # count nearby flags
-        flagged = (
-                (r > 0 and visible_world[r - 1][c] == FLAG) +  # top
-                (r > 0 and c > 0 and visible_world[r - 1][c - 1] == FLAG) +  # top left
-                (r > 0 and c < world_size - 1 and visible_world[r - 1][c + 1] == FLAG) +  # top right
-                (r < world_size - 1 and visible_world[r + 1][c] == FLAG) +  # bottom
-                (r < world_size - 1 and c > 0 and visible_world[r + 1][c - 1] == FLAG) +  # bottom left
-                (r < world_size - 1 and c < world_size - 1 and visible_world[r + 1][c + 1] == FLAG) +  # bottom right
-                (c > 0 and visible_world[r][c - 1] == FLAG) +  # left
-                (c < world_size - 1 and visible_world[r][c + 1] == FLAG)  # right
-        )
-
-        # only check if the user has flagged all nearby squares (to prevent accidental loss)
-        if flagged == visible_world[valid_square[0]][valid_square[1]]:
-            bomb = (
-                    check((r - 1, c)) +  # top
-                    check((r - 1, c - 1)) +  # top left
-                    check((r - 1, c + 1)) +  # top right
-                    check((r + 1, c)) +  # bottom
-                    check((r + 1, c - 1)) +  # bottom left
-                    check((r + 1, c + 1)) +  # bottom right
-                    check((r, c - 1)) +  # left
-                    check((r, c + 1))  # right
-            )
-
-    return bomb
-
-
-def process_args(args: list[str]) -> None:
+def process_args(args: list[str]) -> dict:
     """Process command line arguments"""
-    if len(args) <= 1:
-        return
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-v", "--version", help="Print the version")
+    parser.add_argument("-s", "--seed", help="Set the random seed", type=int)
+    parser.add_argument("-m", "--mine-count", help="Set the number of mines", type=int)
+    parser.add_argument("--world-size-x", help="Set the width of the world", type=int)
+    parser.add_argument("--world-size-y", help="Set the height of the world", type=int)
+    parser.add_argument("--no-white-space", help="Print '.' instead of spaces", action="store_true")
+    parser.add_argument("--use-unicode", help="Use unicode characters", action="store_true")
+    parser.add_argument("--use-color", help="Use color characters", action="store_true")
+    parser.add_argument("--use-gui", help="Use the GUI", action="store_true")
 
-    if args[1] in ["-h", "--help"]:
-        print(HELP_STRING.format(VERSION_STRING, args[0]))
-        sys.exit(0)
+    args = parser.parse_args()
 
-    if args[1] in ["-v", "--version"]:
+    if args.version:
         print(VERSION_STRING)
         sys.exit(0)
 
-    skip = False
-    for j, arg in enumerate(args[1:]):
-        i = j + 1
-        if skip:
-            skip = False
-            continue
+    if args.seed:
+        random.seed(args.seed)
 
-        if arg in ["-s", "--seed"]:
-            global random_seed
-            if len(args) >= i and str(args[i]).isnumeric():
-                random_seed = int(args[i])
-                skip = True
-        elif arg in ["-w", "--world-size"]:
-            global world_size
-            if len(args) >= i and str(args[i + 1]).isnumeric():
-                world_size = int(args[i + 1])
-                if "--use-gui" in args and enable_tkinter:
-                    if world_size > MAX_GUI_WORLD_SIZE:
-                        print(f"World size must be less than {MAX_GUI_WORLD_SIZE}.")
-                        print(HELP_STRING.format(VERSION_STRING, args[0]))
-                        sys.exit(1)
-                else:
-                    if world_size > MAX_WORLD_SIZE:
-                        print(f"World size must be less than {MAX_WORLD_SIZE}.")
-                        print(HELP_STRING.format(VERSION_STRING, args[0]))
-                        sys.exit(1)
-                print(f"World size set to {world_size}.")
-            else:
-                print(HELP_STRING.format(VERSION_STRING, args[0]))
-                sys.exit(1)
-            skip = True
-        elif arg in ["-m", "--mine-count"]:
-            global mine_count
-            if len(args) >= i and str(args[i + 1]).isnumeric():
-                mine_count = int(args[i + 1])
-                if "--use-gui" in args and enable_tkinter:
-                    if mine_count >= MAX_GUI_WORLD_SIZE ** 2:
-                        print(f"Mine count must be less than {MAX_GUI_WORLD_SIZE ** 2}.")
-                        print(HELP_STRING.format(VERSION_STRING, args[0]))
-                        sys.exit(1)
-                else:
-                    if mine_count >= MAX_WORLD_SIZE ** 2:
-                        print(f"Mine count must be less than {MAX_WORLD_SIZE ** 2}.")
-                        print(HELP_STRING.format(VERSION_STRING, args[0]))
-                        sys.exit(1)
-                print(f"Mine count set to {mine_count}.")
-                skip = True
-        elif arg == "--no-white-space":
-            global print_white_space
-            print_white_space = False
-        elif arg == "--use-unicode":
-            global use_unicode
-            use_unicode = True
-        elif arg == "--use-color":
-            global use_color
-            use_color = True
-        elif arg == "--use-gui":
-            if not enable_tkinter:
-                print("Tkinter is not available, cannot use GUI.")
-                sys.exit(1)
-            global use_gui
-            use_gui = True
-        else:
-            print(f"Unrecognized arguments: {arg}")
-            print(HELP_STRING.format(VERSION_STRING, args[0]))
-            sys.exit(1)
-
-
-def win() -> bool:
-    """Check for a win if the world has any remaining bombs that aren't flagged"""
-    for r in range(len(world)):
-        for c in range(len(world[r])):
-            if world[r][c] == 1 and not visible_world[r][c] == FLAG:
-                return False  # Bomb is not flagged
-            if world[r][c] == 0 and visible_world[r][c] == FLAG:
-                return False  # Something not a bomb is flagged
-    for r in visible_world:
-        for c in r:
-            if c == HIDDEN:
-                return False  # Square has not been revealed
-    return True
+    return {
+        "mine-count": args.mine_count if args.mine_count else World.EASY_MINE_COUNT,
+        "world-size-x": args.world_size_x if args.world_size_x else World.EASY_SIZE_X,
+        "world-size-y": args.world_size_y if args.world_size_y else World.EASY_SIZE_Y,
+        "no-white-space": args.no_white_space,
+        "use-unicode": args.use_unicode,
+        "use-color": args.use_color,
+        "use-gui": args.use_gui
+    }
 
 
 def gui_new_game() -> None:
@@ -376,7 +419,7 @@ def gui_new_game() -> None:
     gui_lose_state = False
 
 
-def gui_lose() -> None:
+def gui_lose(world: World) -> None:
     """Display a message to the user that they lost"""
     global gui_has_played_first_move, gui_lose_message, random_seed, gui_counting_time, gui_lose_state
     random_seed = time.time()
@@ -385,7 +428,7 @@ def gui_lose() -> None:
     gui_lose_message.grid(row=0)
 
     gui_lose_state = True
-    update_gui()
+    update_gui(world)
 
     child: tk.Widget
     for child in gui_world.winfo_children():
@@ -408,20 +451,20 @@ def gui_win() -> None:
     gui_counting_time = False
 
 
-def update_gui() -> None:
+def update_gui(world) -> None:
     """Update the GUI"""
     for i in range(world_size):
         for j in range(world_size):
-            if visible_world[i][j] == HIDDEN:
+            if world.visible[i][j] == Constants.HIDDEN:
                 gui_buttons[i][j].configure(text="")
-            elif visible_world[i][j] == FLAG:
-                gui_buttons[i][j].configure(text=CHARACTER_UNICODE["flag"])
-            elif visible_world[i][j] == BOMB:
+            elif world.visible[i][j] == Constants.FLAG:
+                gui_buttons[i][j].configure(text=Constants.CHARACTER_UNICODE["flag"])
+            elif world.visible[i][j] == Constants.BOMB:
                 gui_buttons[i][j].destroy()
-                gui_buttons[i][j] = ttk.Label(gui_world, text=CHARACTER_UNICODE["bomb"])
+                gui_buttons[i][j] = ttk.Label(gui_world, text=Constants.CHARACTER_UNICODE["bomb"])
                 gui_buttons[i][j].grid(row=i, column=j)
             else:
-                if visible_world[i][j] == 0:
+                if world.visible[i][j] == 0:
                     if not isinstance(gui_buttons[i][j], ttk.Label):
                         gui_buttons[i][j].destroy()
                         gui_buttons[i][j] = ttk.Label(gui_world, text="")
@@ -430,29 +473,29 @@ def update_gui() -> None:
                     # gui_buttons[i][j].configure(text="")
                     # gui_buttons[i][j].configure(state="disabled")
                 else:
-                    gui_buttons[i][j].configure(text=str(visible_world[i][j]))
+                    gui_buttons[i][j].configure(text=str(world.visible[i][j]))
                     gui_buttons[i][j].configure(state="normal")
             if gui_lose_state:
-                if visible_world[i][j] == FLAG and world[i][j] == 0:
+                if world.visible[i][j] == Constants.FLAG and world[i][j] == 0:
                     gui_buttons[i][j].destroy()
-                    gui_buttons[i][j] = ttk.Label(gui_world, text=CHARACTER_UNICODE["bad_flag"], foreground="red")
+                    gui_buttons[i][j] = ttk.Label(gui_world, text=Constants.CHARACTER_UNICODE["bad_flag"], foreground="red")
                     gui_buttons[i][j].grid(row=i, column=j)
-                if visible_world[i][j] == HIDDEN and world[i][j] == 1:
+                if world.visible[i][j] == Constants.HIDDEN and world[i][j] == 1:
                     gui_buttons[i][j].destroy()
-                    gui_buttons[i][j] = ttk.Label(gui_world, text=CHARACTER_UNICODE["bomb"], foreground="red")
+                    gui_buttons[i][j] = ttk.Label(gui_world, text=Constants.CHARACTER_UNICODE["bomb"], foreground="red")
                     gui_buttons[i][j].grid(row=i, column=j)
-                # elif visible_world[i][j] == 0:
+                # elif world.visible[i][j] == 0:
                 #    gui_buttons[i][j].destroy()
                 #    gui_buttons[i][j] = ttk.Label(gui_world, text="")
                 #    gui_buttons[i][j].grid(row=i, column=j)
 
-    gui_mines_left.configure(text=str(count_mines(world, visible_world)))
+    gui_mines_left.configure(text=str(world.count_unflagged_mines()))
 
 
-def gui_update_time() -> None:
+def gui_update_time(world: World) -> None:
     """Update the GUI timer"""
     if gui_counting_time:
-        seconds = round(time.time() - start_time)
+        seconds = round(time.time() - world.start_time)
         minutes, seconds = divmod(seconds, 60)
         hours, minutes = divmod(minutes, 60)
         seconds = str(seconds).zfill(2)
@@ -463,45 +506,44 @@ def gui_update_time() -> None:
         gui_root.after(100, gui_update_time)
 
 
-def gui_click(i: int, j: int) -> None:
+def gui_click(world: World, i: int, j: int) -> None:
     """Click a tile"""
-    global gui_has_played_first_move, gui_counting_time, start_time
+    global gui_has_played_first_move, gui_counting_time
 
     # Initialize the world if it hasn't been initialized yet
     if not gui_has_played_first_move:
-        create_world((i, j))
+        world.generate((i, j))
         gui_has_played_first_move = True
 
-        update_gui()  # update the GUI
+        update_gui(world)  # update the GUI
 
         # start game timer
-        start_time = time.time()
         gui_counting_time = True
-        gui_update_time()
+        gui_update_time(world)
         return
 
-    if visible_world[i][j] > 0:
-        if force_check((i, j)):
-            gui_lose()
+    if world.visible[i][j] == Constants.HIDDEN:
+        if world.check_square(i, j):
+            gui_lose(world)
         else:
-            update_gui()
+            update_gui(world)
 
-            if win():
+            if world.check_win():
                 gui_win()
 
         return
 
-    if check((i, j)):
-        gui_lose()
+    if world.check_square(i, j):
+        gui_lose(world)
         return
 
-    update_gui()  # update the GUI
+    update_gui(world)  # update the GUI
 
-    if win():
+    if world.check_win():
         gui_win()
 
 
-def gui_flag(i: int, j: int) -> None:
+def gui_flag(world: World, i: int, j: int) -> None:
     """Flag a tile"""
     global gui_has_played_first_move
 
@@ -509,10 +551,10 @@ def gui_flag(i: int, j: int) -> None:
         # player can't flag a tile until they have played a move
         return
 
-    flag(("f", i, j))  # flag the tile
-    update_gui()  # update the GUI
+    world.flag_square(i, j)  # flag the tile
+    update_gui(world)  # update the GUI
 
-    if win():
+    if world.check_win():
         gui_win()
 
 
@@ -540,10 +582,10 @@ def gui_process_new_game_input() -> None:
 
     # validation
     if gui_mine_count.get() == "" or not gui_mine_count.get().isnumeric() \
-            or int(gui_mine_count.get()) < 1 or int(gui_mine_count.get()) > MAX_GUI_WORLD_SIZE ** 2:
+            or int(gui_mine_count.get()) < 1 or int(gui_mine_count.get()) > Constants.MAX_GUI_WORLD_SIZE ** 2:
         return
     if gui_world_size.get() == "" or not gui_world_size.get().isnumeric() \
-            or int(gui_world_size.get()) < 3 or int(gui_world_size.get()) > MAX_GUI_WORLD_SIZE:
+            or int(gui_world_size.get()) < 3 or int(gui_world_size.get()) > Constants.MAX_GUI_WORLD_SIZE:
         return
 
     mine_count = int(gui_mine_count.get())
@@ -600,7 +642,7 @@ def gui_new_game_window() -> None:
 
 def gui_main() -> None:
     """Alternative main loop for the GUI"""
-    global start_time, gui_buttons, gui_world, gui_root, \
+    global gui_buttons, gui_world, gui_root, \
         gui_mines_left, gui_time_taken, gui_counting_time
 
     # Create the main window and run the event loop
@@ -646,91 +688,139 @@ def gui_main() -> None:
 
     gui_world.grid(row=4)
 
-    start_time = time.time()  # start game timer
-
     gui_root.mainloop()
 
+def process_square(world: World, square: str):
+    if square in ["quit", "exit"]:
+        return Constants.MENU_QUIT, False, 0, 0
+    if square in ["display", "print"]:
+        return Constants.MENU_DISPLAY, False, 0, 0
+    if square == "color":
+        return Constants.MENU_ENABLE_COLOR, False, 0, 0
+    if square == "unicode":
+        return Constants.MENU_ENABLE_UNICODE, False, 0, 0
+
+    if len(square) < 2:
+        return Constants.MENU_ERROR, False, 0, 0
+
+    flagging = False
+    x, y = 0, 0
+
+    if not square[0].isalpha():
+        print("Error: no valid letter found in square")
+        return Constants.MENU_ERROR, False, 0, 0
+
+    if square[1].isalpha():
+        if square[0] == 'f':
+            flagging = True
+        else:
+            # error
+            return Constants.MENU_ERROR, False, 0, 0
+
+        if not square[1].isalpha():
+            print("Error: no valid letter found in square")
+            return Constants.MENU_ERROR, False, 0, 0
+        x = int(ord(square[1]) - ord('a'))
+        if len(square) < 3:
+            print("Error: no valid number found in square")
+            return Constants.MENU_ERROR, False, 0, 0
+
+        y = square[2:]
+    else:
+        x = int(ord(square[0]) - ord('a'))
+        y = square[1:]
+
+    if not y.isnumeric():
+        print("Error: no valid number found in square")
+        return Constants.MENU_ERROR, False, 0, 0
+
+    y = int(y) - 1
+
+    if not world.in_bounds(x, y):
+        print("Error: square is not in world ({}, {})".format(x, y))
+        return Constants.MENU_ERROR, False, 0, 0
+
+    return 0, flagging, x, y
+
+def get_input(world: World) -> tuple[int, bool, int, int]:
+    ps = Constants.MENU_ERROR, False, 0, 0
+    while ps[0] in [Constants.MENU_ERROR, Constants.MENU_QUIT, Constants.MENU_DISPLAY,
+                        Constants.MENU_ENABLE_COLOR, Constants.MENU_ENABLE_UNICODE]:
+        square = input("Enter a starting square to begin (type 'help' for help): ").lower()
+        ps = process_square(world, square)
+        if ps[0] == Constants.MENU_QUIT:
+            print("Quitting...")
+            return Constants.MENU_QUIT, False, 0, 0
+        if ps[0] == Constants.MENU_HELP:
+            print(Constants.MENU_HELP_STRING)
+            continue
+        if ps[0] == Constants.MENU_DISPLAY:
+            if world.has_generated:
+                world.display()
+        if ps[0] == Constants.MENU_ENABLE_COLOR:
+            world.use_color = True
+        if ps[0] == Constants.MENU_ENABLE_UNICODE:
+            world.use_unicode = True
+
+    return ps[0], ps[1], ps[2], ps[3]
 
 def main(args: list[str]) -> None:
     """Main function and entry point for the minesweeper program"""
-    global start_time
-    process_args(args)
+    args = process_args(args)
+    sys.setrecursionlimit(2 * args["world-size-x"] * args["world-size-y"])
 
-    sys.setrecursionlimit(100 * world_size * world_size)  # might need rework in the future
-
-    if use_gui:
+    if args["use-gui"]:
         gui_main()  # start the GUI
         return
 
-    # start game
+    # start console game
     print("Welcome to Minesweeper!")
 
+    world = World(
+        world_size_x=args["world-size-x"],
+        world_size_y=args["world-size-y"],
+        mine_count=args["mine-count"],
+        use_color=args["use-color"],
+        use_unicode=args["use-unicode"]
+    )
+
     # get user input
-    square = input("Enter a starting square to begin (type 'help' for help): ").lower()
-    ps = process_square(square, world_size)
-    if ps == QUIT:
-        print("Quitting...")
+    ps = get_input(world)
+    while ps[1]:
+        print("Can't flag on the first move!")
+        ps = get_input(world)
+
+    if ps[0] == Constants.MENU_QUIT:
         return
-    if ps == PRINT:
-        print_world()
 
-    while ps in [FAIL, 1, 2]:
-        square = input("Enter a starting square to begin (type 'help' for help): ").lower()
-        ps = process_square(square, world_size)
-
-        if ps == QUIT:
-            print("Quitting...")
-            return
-        if ps == PRINT:
-            print_world()
-
-    create_world(ps)
+    world.generate((ps[2], ps[3]))
 
     # begin game loop
-    start_time = time.time()  # start game timer
     while True:
-        print_world()
+        world.display()
 
         # get user input
-        square = input("Enter a square (type 'help' for help): ").lower()
-        ps = process_square(square, world_size)
-
-        if ps == QUIT:
-            print("Quitting...")
+        ps = get_input(world)
+        if ps[0] == Constants.MENU_QUIT:
             return
-        if ps == PRINT:
-            print_world()
-        while ps in [FAIL, 1, PRINT]:
-            square = input("Enter a square (type 'help' for help): ").lower()
 
-            ps = process_square(square, world_size)
-            if ps == QUIT:
-                print("Quitting...")
-                return
-            if ps == PRINT:
-                print_world()
-
-        # process user input
-        validated_square = ps
-        if validated_square[0] == "f":  # flag
-            flag(validated_square)
+        if ps[1]:  # flag
+            world.flag_square(ps[2], ps[3])
         else:
-            if visible_world[validated_square[0]][validated_square[1]] > 0:
-                x = force_check(validated_square)
-            else:
-                x = check(validated_square)
+            x = world.check_square(ps[2], ps[3])
 
             if x:
                 print("Oh No! You hit a bomb!")
-                print_world()
+                world.display()
+                world.display_all()
                 print("Oh No! You hit a bomb!")
                 print("You have lost!")
                 break
-        if win():
+        if world.check_win():
             print("Congrats! You win!")
             break
 
-    finish_time = time.time() - start_time
+    finish_time = time.time() - world.start_time
     print(f"Finished in {round(finish_time)} seconds.")
 
 
