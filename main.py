@@ -40,28 +40,79 @@ import sys
 import time
 import random
 import argparse
+import os
+import json
+import math
 
-enable_tkinter: bool = True
-
+enable_gui: bool = True
 try:
-    import tkinter as tk
-    import tkinter.ttk as ttk
+    import PyQt6
 except ImportError:
-    enable_tkinter = False
+    enable_gui = False
 
-    tk = None
-    ttk = None
 
-# ---------- Constants ----------
+class Settings:
+    Preferences = {}
 
-class Constants:
-    MAX_GUI_WORLD_SIZE = 250
+    @staticmethod
+    def LoadPreferences(path):
+        """Load preferences from a json file, only do this before creating a world"""
+        if os.path.isfile(path):
+            try:
+                with open(path, "r") as file:
+                    data = json.load(file)
+                    preferences = data
+                    for key in data.keys():
+                        match key:
+                            case "constants":
+                                if "MAX_GUI_WORLD_SIZE" in data[key].keys():
+                                    Settings.MaxGuiWorldSize = data[key]["MAX_GUI_WORLD_SIZE"]
+                            case "game_symbols":
+                                if "flag" in data[key].keys():
+                                    Settings.Flag = data[key]["flag"]
+                                if "hidden" in data[key].keys():
+                                    Settings.Hidden = data[key]["hidden"]
+                                if "bomb" in data[key].keys():
+                                    Settings.Bomb = data[key]["bomb"]
+                                if "bad_flag" in data[key].keys():
+                                    Settings.BadFlag = data[key]["bad_flag"]
+                                if "empty" in data[key].keys():
+                                    Settings.Empty = data[key]["empty"]
+                            case "unicode_characters":
+                                if "flag" in data[key].keys():
+                                    Settings.CharacterUnicode[Settings.Flag] = data[key]["flag"]
+                                if "hidden" in data[key].keys():
+                                    Settings.CharacterUnicode[Settings.Hidden] = data[key]["hidden"]
+                                if "bomb" in data[key].keys():
+                                    Settings.CharacterUnicode[Settings.Bomb] = data[key]["bomb"]
+                                if "bad_flag" in data[key].keys():
+                                    Settings.CharacterUnicode[Settings.BadFlag] = data[key]["bad_flag"]
+                            case "default":
+                                if "use_color" in data[key].keys():
+                                    Settings.DefaultUseColor = data[key]["use_color"]
+                                if "use_unicode" in data[key].keys():
+                                    Settings.DefaultUseUnicode = data[key]["use_unicode"]
 
-    FLAG = 'F'
-    HIDDEN = 'X'
-    BOMB = 'B'
-    BAD_FLAG = 'L'
-    EMPTY = '.'
+            except Exception as e:
+                print("Failed to load prefences file:", e)
+
+    @staticmethod
+    def PrintHelp():
+        print(Settings.MENU_HELP_STRING.format(bomb=Settings.Bomb,
+                                               hidden=Settings.Hidden,
+                                               flag=Settings.Flag,
+                                               wrong_flag=Settings.BadFlag))
+
+    MaxGuiWorldSize = 50
+
+    Flag = 'F'
+    Hidden = '#'
+    Bomb = 'B'
+    BadFlag = 'L'
+    Empty = '.'
+
+    DefaultUseColor = True
+    DefaultUseUnicode = False
 
     MENU_QUIT = 1
     MENU_DISPLAY = 2
@@ -70,19 +121,22 @@ class Constants:
     MENU_ENABLE_COLOR = 5
     MENU_ENABLE_UNICODE = 6
 
-    CHARACTER_UNICODE = {
-        "bomb": "💣",
-        "flag": "\u2691",
-        "hidden": "\u2588",
-        "bad_flag": "🚩",
+    CharacterUnicode = {
+        Bomb: "\u2620",
+        Flag: "\u2691",
+        Hidden: "\u25A0",
+        BadFlag: "\u2690",
+        ' ': '',
     }
 
-    CHARACTER_COLOR = {
-        "bomb": "\033[31m",  # red
-        "flag": "\033[32m",  # green
-        "bad_flag": "\033[35m",  # pink
-        "hidden": "\033[34m",  # blue
-        "reset": "\033[0m",  # reset
+    CharacterColor = {
+        Bomb: "\033[31m",  # red
+        Flag: "\033[32m",  # green
+        BadFlag: "\033[35m",  # pink
+        Hidden: "\033[34m",  # blue
+        # utility
+        ' ': '',
+        "reset": "\033[0m",
     }
 
     MENU_HELP_STRING = """Commands:
@@ -99,10 +153,10 @@ class Constants:
         To flag a square, enter the letter f first (e.g. fa1, fb2, fc3).
 
     Representation:
-        - Bomb: B
-        - Hidden: X
-        - Flag: F
-        - Wrong Flag: L
+        - Bomb: {bomb}
+        - Hidden: {hidden}
+        - Flag: {flag}
+        - Wrong Flag: {wrong_flag}
 """
 
 class World:
@@ -134,20 +188,21 @@ class World:
         self.world_size_x: int = 10 if "world_size_x" not in kwargs.keys() else kwargs["world_size_x"]
         self.world_size_y: int = 10 if "world_size_y" not in kwargs.keys() else kwargs["world_size_y"]
 
-        self.use_color = False if "use_color" not in kwargs.keys() else kwargs["use_color"]
-        self.use_unicode = False if "use_unicode" not in kwargs.keys() else kwargs["use_unicode"]
-        # self.use_gui = False if "use_gui" not in kwargs.keys() else kwargs["use_gui"]
+        self.use_color = Settings.DefaultUseColor if "use_color" not in kwargs.keys() else kwargs["use_color"]
+        self.use_unicode = Settings.DefaultUseUnicode if "use_unicode" not in kwargs.keys() else kwargs["use_unicode"]
 
         self.display_empty = False if "display_empty" not in kwargs.keys() else kwargs["display_empty"]
 
         self.start_time = 0
         self.paused_for = 0
 
+        self.preferences = {}
+
     def generate(self, start_square: tuple[int, int] | None) -> None:
         if start_square is not None:
             if not self.in_bounds(start_square[0], start_square[1]):
                 print(f"Error occurred while generating world: Incorrect position for start square ({
-                        start_square[0]}, {start_square[1]})")
+                start_square[0]}, {start_square[1]})")
 
         if self.mine_count >= ((self.world_size_x * self.world_size_y) - 1):
             print("Error occurred while generating world: Too many mines!")
@@ -155,7 +210,7 @@ class World:
             return
 
         self.mines = [[False for _ in range(self.world_size_x)] for _ in range(self.world_size_y)]
-        self.visible = [[Constants.HIDDEN for _ in range(self.world_size_x)] for _ in range(self.world_size_y)]
+        self.visible = [[Settings.Hidden for _ in range(self.world_size_x)] for _ in range(self.world_size_y)]
 
         # Ensure start square does not have a mine on it
         if start_square:
@@ -163,10 +218,10 @@ class World:
 
         for _ in range(self.mine_count):
             x, y = random.randint(0, self.world_size_x - 1), random.randint(0, self.world_size_y - 1)
-            while self.mines[x][y]:
+            while self.mines[y][x]:
                 x, y = random.randint(0, self.world_size_x - 1), random.randint(0, self.world_size_y - 1)
 
-            self.mines[x][y] = True
+            self.mines[y][x] = True
 
         if start_square:
             self.mines[start_square[1]][start_square[0]] = False
@@ -195,44 +250,20 @@ class World:
             for x in range(self.world_size_x):
                 dp_value = self.visible[y][x]
 
-                if dp_value == Constants.EMPTY and not self.display_empty:
+                if self.use_color and not (dp_value.isnumeric() or dp_value == Settings.Empty):
+                    print(Settings.CharacterColor[dp_value], end="")
+
+                if self.use_unicode and not (dp_value.isnumeric() or dp_value == Settings.Empty):
+                    dp_value = Settings.CharacterUnicode[dp_value]
+
+                if dp_value == Settings.Empty and not self.display_empty:
                     dp_value = ' '
 
-                display_set = {
-                    "bomb": Constants.BOMB,
-                    "flag": Constants.FLAG,
-                    "hidden": Constants.HIDDEN,
-                    "bad_flag": Constants.BAD_FLAG,
-                }
 
-                if self.use_unicode:
-                    display_set = Constants.CHARACTER_UNICODE
-
-                match dp_value:
-                    case Constants.BOMB:
-                        dp_value = display_set["bomb"]
-                    case Constants.FLAG:
-                        dp_value = display_set["flag"]
-                    case Constants.HIDDEN:
-                        dp_value = display_set["hidden"]
-                    case Constants.BAD_FLAG:
-                        dp_value = display_set["bad_flag"]
-                print(" ", end="")
+                print(f" {dp_value}", end="")
 
                 if self.use_color:
-                    match dp_value:
-                        case Constants.BOMB:
-                            print(Constants.CHARACTER_COLOR["bomb"], end="")
-                        case Constants.FLAG:
-                            print(Constants.CHARACTER_COLOR["flag"], end="")
-                        case Constants.HIDDEN:
-                            print(Constants.CHARACTER_COLOR["hidden"], end="")
-                        case Constants.BAD_FLAG:
-                            print(Constants.CHARACTER_COLOR["bad_flag"], end="")
-                print(f"{dp_value}", end="")
-
-                if self.use_color:
-                    print(Constants.CHARACTER_COLOR["reset"], end="")
+                    print(Settings.CharacterColor["reset"], end="")
             print()
 
         print()
@@ -243,8 +274,8 @@ class World:
             for y in range(self.world_size_y):
                 self.check_square(x, y)
 
-                if self.visible[y][x] == Constants.FLAG and self.mines[x][y]:
-                    self.visible[y][x] = Constants.BAD_FLAG
+                if self.visible[y][x] == Settings.Flag and not self.mines[y][x]:
+                    self.visible[y][x] = Settings.BadFlag
 
         self.display()
 
@@ -255,36 +286,36 @@ class World:
         if not self.in_bounds(x, y):
             return False
 
-        if self.visible[y][x] in [Constants.FLAG, Constants.EMPTY]:
+        if self.visible[y][x] in [Settings.Flag, Settings.Empty]:
             return False
 
-        if self.visible[y][x] == Constants.HIDDEN:
+        if self.visible[y][x] == Settings.Hidden:
             if self.mines[y][x]:
-                self.visible[y][x] = Constants.BOMB
+                self.visible[y][x] = Settings.Bomb
                 return True
 
-            count = self.count_nearby(x, y, Constants.BOMB)
+            count = self.count_nearby(x, y, Settings.Bomb)
 
             if count == 0:
-                self.visible[y][x] = Constants.EMPTY
+                self.visible[y][x] = Settings.Empty
                 for X in range(x - 1, x + 2):
                     for Y in range(y - 1, y + 2):
                         if (X == x and Y == y) or not self.in_bounds(X, Y):
                             continue
 
-                        if self.visible[Y][X] == Constants.HIDDEN:
+                        if self.visible[Y][X] == Settings.Hidden:
                             self.check_square(X, Y)
             else:
                 self.visible[y][x] = str(count)
 
         elif self.visible[y][x].isnumeric():
-            if self.count_nearby(x, y, Constants.FLAG) == int(self.visible[y][x]):
+            if self.count_nearby(x, y, Settings.Flag) == int(self.visible[y][x]):
                 for X in range(x - 1, x + 2):
                     for Y in range(y - 1, y + 2):
                         if (X == x and Y == y) or not self.in_bounds(X, Y):
                             continue
 
-                        if self.visible[X][Y] == Constants.HIDDEN:
+                        if self.visible[Y][X] == Settings.Hidden:
                             if self.check_square(X, Y):
                                 return True
 
@@ -292,17 +323,17 @@ class World:
 
     def flag_square(self, x: int, y: int) -> None:
         """Toggle flag on the given square for mines"""
-        if self.visible[y][x] == Constants.FLAG:
-            self.visible[y][x] = Constants.HIDDEN
-        elif self.visible[y][x] == Constants.HIDDEN:
-            self.visible[y][x] = Constants.FLAG
+        if self.visible[y][x] == Settings.Flag:
+            self.visible[y][x] = Settings.Hidden
+        elif self.visible[y][x] == Settings.Hidden:
+            self.visible[y][x] = Settings.Flag
 
     def check_win(self) -> bool:
         for x in range(self.world_size_x):
             for y in range(self.world_size_y):
-                if self.visible[y][x] == Constants.HIDDEN:
+                if self.visible[y][x] == Settings.Hidden:
                     return False
-                if self.visible[y][x] == Constants.FLAG and not self.mines[y][x]:
+                if self.visible[y][x] == Settings.Flag and not self.mines[y][x]:
                     return False
 
         return True
@@ -311,7 +342,7 @@ class World:
         count = 0
         for x in range(self.world_size_x):
             for y in range(self.world_size_y):
-                if self.mines[y][x] and self.visible[y][x] != Constants.FLAG:
+                if self.mines[y][x] and self.visible[y][x] != Settings.Flag:
                     count += 1
 
         return count
@@ -322,9 +353,9 @@ class World:
             for Y in range(y - 1, y + 2):
                 if self.in_bounds(X, Y) and not (X == x and Y == y):
                     match value:
-                        case Constants.FLAG:
-                            count += self.visible[Y][X] == Constants.FLAG
-                        case Constants.BOMB:
+                        case Settings.Flag:
+                            count += self.visible[Y][X] == Settings.Flag
+                        case Settings.Bomb:
                             count += self.mines[Y][X]
 
         return count
@@ -332,27 +363,394 @@ class World:
     def in_bounds(self, x, y):
         return self.world_size_x > x >= 0 and self.world_size_y > y >= 0
 
-if enable_tkinter:
-    gui_buttons: list[list[tk.Button]] = []
-    gui_world: tk.Frame | None = None
-    gui_root: tk.Tk | None = None
-    gui_lose_message: tk.Label | None = None
-    gui_win_message: tk.Label | None = None
-    gui_mines_left: tk.Label | None = None
-    gui_time_taken: tk.Label | None = None
-    gui_has_played_first_move = False
-    gui_counting_time = False
+if enable_gui:
+    from PyQt6.QtWidgets import QMainWindow, QApplication, QPushButton, QLabel, QDialogButtonBox, QSlider, QWidget
+    from PyQt6.QtWidgets import QVBoxLayout, QDialog, QHBoxLayout, QGridLayout, QVBoxLayout, QMessageBox
+    from PyQt6.QtCore import QTimer, Qt
 
-    # New game gui elements
-    gui_new_window: tk.Tk | None = None
-    gui_mine_count: tk.Entry | None = None
-    gui_world_size: tk.Entry | None = None
-    gui_lose_state: bool = False
+    class GButton(QLabel):
+        pressPosR = None
+        pressPosL = None
 
-random_seed: float = time.time()
+        def __init__(self, text=""):
+            super().__init__(text)
+
+            self.right_click_action = None
+            self.left_click_action = None
+
+            self.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            self.setStyleSheet(
+                "QLabel { background-color: #2c2c2c; color: #eee; border: 1px solid #444; }"
+                "QLabel:hover { background-color: #3a3a3a; }"
+                "QLabel:pressed { background-color: #444; }"
+            )
+
+        def mousePressEvent(self, e):
+            if e.button() == Qt.MouseButton.RightButton:
+                self.pressPosR = e.pos()
+            elif e.button() == Qt.MouseButton.LeftButton:
+                self.pressPosL = e.pos()
+
+        def mouseReleaseEvent(self, e):
+            if e.button() == Qt.MouseButton.RightButton and self.pressPosR is not None and e.pos() in self.rect():
+                self.right_click_action()
+            if e.button() == Qt.MouseButton.LeftButton and self.pressPosL is not None and e.pos() in self.rect():
+                self.left_click_action()
+
+            self.pressPosR = None
+            self.pressPosL = None
+
+        def reveal(self):
+            self.setStyleSheet(
+                "QLabel { background-color: #1e1e1e; color: #eee; border: 1px solid #333; }"
+                "QLabel:hover { background-color: #1e1e1e; }"
+                "QLabel:pressed { background-color: #1e1e1e; }"
+            )
+
+    class GUIWindow(QMainWindow):
+        """GUI window for the minesweeper game"""
+        def __init__(self):
+            super().__init__()
+
+            self.setWindowTitle("Minesweeper")
+
+            self.buttons = []
+
+            self.lose_message = None
+            self.win_message = None
+            self.time_taken = None
+            self.mines_left = None
+
+            self.root = None
+            self.button_grid = None
+
+        def create_layout(self, new_game_window, quit_action):
+            self.root = QVBoxLayout()
+            buttons = QHBoxLayout()
+
+            new_game = QPushButton("New Game")
+            new_game.clicked.connect(new_game_window)
+            buttons.addWidget(new_game)
+
+            quit_button = QPushButton("Quit")
+            quit_button.clicked.connect(quit_action)
+            buttons.addWidget(quit_button)
+
+            info = QGridLayout()
+            info.setAlignment(Qt.AlignmentFlag.AlignTop)
+
+            info.addWidget(QLabel("Timer"), 0, 0)
+            info.addWidget(QLabel("Mines Left"), 1, 0)
+
+            self.time_taken = QLabel("0:00:00")
+            self.mines_left = QLabel("0")
+
+            info.addWidget(self.time_taken, 0, 1)
+            info.addWidget(self.mines_left, 1, 1)
+
+            self.button_grid = QGridLayout()
+
+            self.root.addLayout(buttons)
+            self.root.addLayout(info)
+            self.root.addLayout(self.button_grid)
+
+            root_widget = QWidget()
+            root_widget.setLayout(self.root)
+            self.setCentralWidget(root_widget)
+
+        def create_buttons(self, world):
+            if self.button_grid is not None:
+                self.root.removeItem(self.button_grid)
+                while self.button_grid.count():
+                    item = self.button_grid.takeAt(0)
+                    if item.widget():
+                        item.widget().deleteLater()
+
+                self.button_grid.deleteLater()
+                self.button_grid = None
+
+            self.button_grid = QGridLayout()
+            self.button_grid.setSpacing(1)
+            self.button_grid.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            self.root.addLayout(self.button_grid)
+
+            self.buttons.clear()
+            for y in range(world.world_size_y):
+                self.buttons.append([])
+                for x in range(world.world_size_x):
+                    self.buttons[y].append(GButton(""))
+                    self.buttons[y][x].setFixedSize(20, 20)
+                    self.button_grid.addWidget(self.buttons[y][x], y, x)
+
+        def show_lose(self):
+            pass
+
+        def show_win(self):
+            pass
+
+    class NewGameDialog(QDialog):
+        def __init__(self, parent, world, accept):
+            super().__init__(parent)
+            self.setWindowTitle("New Game")
+
+            self.mine_count = 10
+            self.world_size = 9
+
+            vlayout = QVBoxLayout()
+
+            qbtn = QDialogButtonBox.StandardButton.Cancel | QDialogButtonBox.StandardButton.Ok
+            self.buttonBox = QDialogButtonBox(qbtn)
+            self.buttonBox.accepted.connect(accept)
+            self.buttonBox.rejected.connect(lambda: self.close())
+
+            layout = QGridLayout()
+
+            self.gui_mine_count = QSlider(Qt.Orientation.Horizontal)
+            self.gui_mine_count.setValue(world.mine_count)
+            self.gui_mine_count.setRange(10,int(Settings.MaxGuiWorldSize*Settings.MaxGuiWorldSize*0.3))
+            self.gui_mine_count.valueChanged.connect(self.update_mine_count)
+            self.gui_mine_countv = QLabel(str(world.mine_count))
+            self.gui_mine_countv.setMinimumWidth(30)
+
+            self.gui_world_size = QSlider(Qt.Orientation.Horizontal)
+            self.gui_world_size.setValue(world.world_size_y)
+            self.gui_world_size.setRange(3, Settings.MaxGuiWorldSize)
+            self.gui_world_size.valueChanged.connect(self.update_world_size)
+            self.gui_world_sizev = QLabel(str(world.world_size_y))
+            self.gui_mine_countv.setMinimumWidth(30)
+
+            layout.addWidget(QLabel("Mine Count"), 0, 0)
+            layout.addWidget(self.gui_mine_count, 0, 1)
+            layout.addWidget(self.gui_mine_countv, 0, 3)
+            layout.addWidget(QLabel("World Size"), 1, 0)
+            layout.addWidget(self.gui_world_size, 1, 1)
+            layout.addWidget(self.gui_world_sizev, 1, 3)
+
+            vlayout.addLayout(layout)
+            vlayout.addWidget(self.buttonBox)
+
+            self.setLayout(vlayout)
+
+        def update_mine_count(self, value):
+            self.mine_count = value
+            self.gui_mine_countv.setText(str(value))
+
+            if self.mine_count > self.world_size * self.world_size / 3:
+                self.world_size = math.ceil(math.sqrt(self.mine_count * 3))
+                self.gui_world_size.setValue(self.world_size)
+
+        def update_world_size(self, value):
+            self.world_size = value
+            self.gui_world_sizev.setText(str(value))
+
+    class ErrorDialog(QDialog):
+        def __init__(self, parent, message):
+            super().__init__()
+            self.setWindowTitle("Error")
+
+            vlayout = QVBoxLayout()
+            label = QLabel(message)
+            vlayout.addWidget(label)
+
+            qbtn = QDialogButtonBox.StandardButton.Ok
+            button_box = QDialogButtonBox(qbtn)
+            button_box.accepted.connect(self.accept)
+            vlayout.addWidget(button_box)
+
+            self.setLayout(vlayout)
+            self.exec()
+
+        def accept(self):
+            self.close()
+
+    class GUI:
+        """GUI for the minesweeper game"""
+        def __init__(self):
+            super().__init__()
+            self.world = World()
+
+            self.application = None
+            self.gui_window = None
+            self.new_game_window = None
+
+            self.counting_time = False
+            self.lose_state: bool = False
+
+            self.world_size = 9
+            self.mine_count = 10
+
+        def new_game(self) -> None:
+            """Create a new game"""
+            self.counting_time = False
+
+            self.gui_window.hide()
+            self.world = World()
+            self.world.world_size_y = self.world_size
+            self.world.world_size_x = self.world_size
+            self.world.mine_count = self.mine_count
+            sys.setrecursionlimit(4 * self.world_size * self.world_size)
+
+            self.gui_window.create_buttons(self.world)
+            self.gui_window.mines_left.setText(str(self.world.mine_count))
+            self.gui_window.layout().update()
+            self.gui_window.show()
+
+            for y in range(self.world.world_size_y):
+                for x in range(self.world.world_size_x):
+                    self.gui_window.buttons[y][x].left_click_action = lambda a=x, b=y: self.click(a, b)
+                    self.gui_window.buttons[y][x].right_click_action = lambda a=x, b=y: self.flag(a, b)
+
+            self.lose_state = False
+
+        def lose(self) -> None:
+            """Display a message to the user that they lost"""
+            self.gui_window.show_lose()
+
+            self.lose_state = True
+            self.update_gui()
+
+            self.counting_time = False
+
+            dlg = QMessageBox()
+            dlg.setWindowTitle("Game Over")
+            dlg.setText("You Lost!")
+            dlg.setIcon(QMessageBox.Icon.Critical)
+            dlg.setStandardButtons(QMessageBox.StandardButton.Ok)
+            dlg.exec()
 
 
-def process_args(args: list[str]) -> dict:
+        def win(self) -> None:
+            """Display a message to the user that they won"""
+            self.gui_window.show_win()
+            self.counting_time = False
+
+            dlg = QMessageBox()
+            dlg.setWindowTitle("Congratulations!")
+            dlg.setText("You Win!")
+            dlg.setIcon(QMessageBox.Icon.Information)
+            dlg.setStandardButtons(QMessageBox.StandardButton.Ok)
+            dlg.exec()
+
+
+        def update_gui(self) -> None:
+            """Update the GUI"""
+            for y in range(self.world.world_size_y):
+                for x in range(self.world.world_size_x):
+                    if self.world.visible[y][x] not in [Settings.Hidden, Settings.Flag]:
+                        self.gui_window.buttons[y][x].reveal()
+
+                    if self.world.visible[y][x].isnumeric():
+                        self.gui_window.buttons[y][x].setText(self.world.visible[y][x])
+                        continue
+
+                    match self.world.visible[y][x]:
+                        case Settings.Hidden:
+                            self.gui_window.buttons[y][x].setText("")
+                        case Settings.Flag:
+                            self.gui_window.buttons[y][x].setText(Settings.CharacterUnicode[Settings.Flag])
+                        case Settings.Bomb:
+                            pass
+                        case Settings.Empty:
+                            self.gui_window.buttons[y][x].setText("")
+                        case _:
+                            self.gui_window.buttons[y][x].setText(str(self.world.visible[y][y]))
+
+                    if self.lose_state:
+                        value = self.world.visible[y][x]
+                        if value == Settings.Empty:
+                            value = ' '
+                        elif value == Settings.Flag:
+                            if self.world.mines[y][x]:
+                                value = Settings.CharacterUnicode[Settings.Flag]
+                            else:
+                                value = Settings.CharacterUnicode[Settings.BadFlag]
+                        elif value == Settings.Hidden and self.world.mines[y][x]:
+                            value = Settings.CharacterUnicode[Settings.Bomb]
+                        elif value == Settings.Bomb:
+                            value = Settings.CharacterUnicode[Settings.Bomb]
+                        elif value == Settings.Hidden:
+                            value = ' '
+                        else:
+                            value = self.world.visible[y][x]
+
+                        self.gui_window.buttons[y][x].setText(value)
+                        self.gui_window.buttons[y][x].setDisabled(True)
+
+            # self.world.display()
+            self.gui_window.mines_left.setText(str(self.world.count_unflagged_mines()))
+
+        def update_time(self) -> None:
+            """Update the GUI timer"""
+            if self.counting_time:
+                seconds = round(time.time() - self.world.start_time)
+                minutes, seconds = divmod(seconds, 60)
+                hours, minutes = divmod(minutes, 60)
+                self.gui_window.time_taken.setText(f"{str(hours)}:{str(minutes).zfill(2)}:{str(seconds).zfill(2)}")
+
+                QTimer.singleShot(1, self.update_time)
+
+
+        def click(self, x: int, y: int) -> None:
+            """Click a tile"""
+            # Initialize the world if it hasn't been initialized yet
+            if not self.world.has_generated:
+                self.world.generate((x, y))
+                self.counting_time = True
+                self.update_gui()
+                self.update_time()
+                return
+
+            if self.world.check_square(x, y):
+                self.lose()
+                return
+
+            self.update_gui()  # update the GUI
+
+            if self.world.check_win():
+                self.win()
+
+
+        def flag(self, x: int, y: int) -> None:
+            """Flag a tile"""
+            if not self.world.has_generated:
+                # player can't flag a tile until the world has generated
+                return
+
+            self.world.flag_square(x, y)
+            self.update_gui()
+
+            if self.world.check_win():
+                self.win()
+
+        def process_new_game_input(self) -> None:
+            """Process the new game input"""
+            self.mine_count = self.new_game_window.mine_count
+            self.world_size = self.new_game_window.world_size
+            self.new_game_window.close()
+            self.new_game_window = None
+
+            self.new_game()
+
+        def new_game_dialog(self) -> None:
+            """Create a new game window"""
+            self.new_game_window = NewGameDialog(self.gui_window, self.world, self.process_new_game_input)
+            self.new_game_window.exec()
+
+        def on_quit(self) -> None:
+            self.application.quit()
+
+        def main(self) -> None:
+            """Alternative main loop for the GUI"""
+            self.application = QApplication([])
+            self.gui_window = GUIWindow()
+            self.gui_window.create_layout(self.new_game_dialog, self.on_quit)
+
+            self.new_game()
+
+            self.gui_window.show()
+            self.application.exec()
+
+def process_args() -> dict:
     """Process command line arguments"""
     parser = argparse.ArgumentParser()
     parser.add_argument("-v", "--version", help="Print the version")
@@ -364,6 +762,7 @@ def process_args(args: list[str]) -> dict:
     parser.add_argument("--use-unicode", help="Use unicode characters", action="store_true")
     parser.add_argument("--use-color", help="Use color characters", action="store_true")
     parser.add_argument("--use-gui", help="Use the GUI", action="store_true")
+    parser.add_argument("--preferences", help="Describe alternate preferences file path", type=str)
 
     args = parser.parse_args()
 
@@ -381,350 +780,40 @@ def process_args(args: list[str]) -> dict:
         "no-white-space": args.no_white_space,
         "use-unicode": args.use_unicode,
         "use-color": args.use_color,
-        "use-gui": args.use_gui
+        "use-gui": args.use_gui,
+        "preferences": args.preferences if args.preferences else "prefs.json",
     }
 
-
-def gui_new_game() -> None:
-    """Create a new game"""
-    global gui_buttons, gui_has_played_first_move, random_seed, gui_counting_time, gui_lose_state
-    gui_has_played_first_move = False
-    gui_counting_time = False
-
-    random_seed = time.time()
-
-    # Actual world creation should be delayed until the user clicks a tile
-    # clear the world
-    for child in gui_world.winfo_children():
-        child.destroy()
-
-    if gui_lose_message is not None:
-        gui_lose_message.destroy()
-
-    if gui_win_message is not None:
-        gui_win_message.destroy()
-
-    gui_time_taken.configure(text="00:00:00")
-
-    gui_buttons = []
-    for i in range(world_size):
-        gui_buttons.append([])
-        for j in range(world_size):
-            gui_buttons[i].append(ttk.Button(gui_world, takefocus=0, text="",
-                                             command=lambda a=i, b=j: gui_click(a, b)))
-            gui_buttons[i][j].bind("<Button-3>", lambda event=None, a=i, b=j: gui_flag(a, b))
-            gui_buttons[i][j]["width"] = 2
-            gui_buttons[i][j].grid(row=i, column=j)
-
-    gui_lose_state = False
-
-
-def gui_lose(world: World) -> None:
-    """Display a message to the user that they lost"""
-    global gui_has_played_first_move, gui_lose_message, random_seed, gui_counting_time, gui_lose_state
-    random_seed = time.time()
-
-    gui_lose_message = tk.Label(gui_root, text="You have lost!")
-    gui_lose_message.grid(row=0)
-
-    gui_lose_state = True
-    update_gui(world)
-
-    child: tk.Widget
-    for child in gui_world.winfo_children():
-        child.configure(state="disabled")
-
-    gui_counting_time = False
-
-
-def gui_win() -> None:
-    """Display a message to the user that they won"""
-    global gui_has_played_first_move, gui_win_message, random_seed, gui_counting_time
-    random_seed = time.time()
-
-    gui_win_message = tk.Label(gui_root, text="You have won!")
-    gui_win_message.grid(row=0)
-
-    for child in gui_world.winfo_children():
-        child.configure(state="disabled")
-
-    gui_counting_time = False
-
-
-def update_gui(world) -> None:
-    """Update the GUI"""
-    for i in range(world_size):
-        for j in range(world_size):
-            if world.visible[i][j] == Constants.HIDDEN:
-                gui_buttons[i][j].configure(text="")
-            elif world.visible[i][j] == Constants.FLAG:
-                gui_buttons[i][j].configure(text=Constants.CHARACTER_UNICODE["flag"])
-            elif world.visible[i][j] == Constants.BOMB:
-                gui_buttons[i][j].destroy()
-                gui_buttons[i][j] = ttk.Label(gui_world, text=Constants.CHARACTER_UNICODE["bomb"])
-                gui_buttons[i][j].grid(row=i, column=j)
-            else:
-                if world.visible[i][j] == 0:
-                    if not isinstance(gui_buttons[i][j], ttk.Label):
-                        gui_buttons[i][j].destroy()
-                        gui_buttons[i][j] = ttk.Label(gui_world, text="")
-                        gui_buttons[i][j].grid(row=i, column=j)
-
-                    # gui_buttons[i][j].configure(text="")
-                    # gui_buttons[i][j].configure(state="disabled")
-                else:
-                    gui_buttons[i][j].configure(text=str(world.visible[i][j]))
-                    gui_buttons[i][j].configure(state="normal")
-            if gui_lose_state:
-                if world.visible[i][j] == Constants.FLAG and world[i][j] == 0:
-                    gui_buttons[i][j].destroy()
-                    gui_buttons[i][j] = ttk.Label(gui_world, text=Constants.CHARACTER_UNICODE["bad_flag"], foreground="red")
-                    gui_buttons[i][j].grid(row=i, column=j)
-                if world.visible[i][j] == Constants.HIDDEN and world[i][j] == 1:
-                    gui_buttons[i][j].destroy()
-                    gui_buttons[i][j] = ttk.Label(gui_world, text=Constants.CHARACTER_UNICODE["bomb"], foreground="red")
-                    gui_buttons[i][j].grid(row=i, column=j)
-                # elif world.visible[i][j] == 0:
-                #    gui_buttons[i][j].destroy()
-                #    gui_buttons[i][j] = ttk.Label(gui_world, text="")
-                #    gui_buttons[i][j].grid(row=i, column=j)
-
-    gui_mines_left.configure(text=str(world.count_unflagged_mines()))
-
-
-def gui_update_time(world: World) -> None:
-    """Update the GUI timer"""
-    if gui_counting_time:
-        seconds = round(time.time() - world.start_time)
-        minutes, seconds = divmod(seconds, 60)
-        hours, minutes = divmod(minutes, 60)
-        seconds = str(seconds).zfill(2)
-        minutes = str(minutes).zfill(2)
-        hours = str(hours).zfill(2)
-        gui_time_taken.configure(text=hours + ":" + minutes + ":" + seconds)
-
-        gui_root.after(100, gui_update_time)
-
-
-def gui_click(world: World, i: int, j: int) -> None:
-    """Click a tile"""
-    global gui_has_played_first_move, gui_counting_time
-
-    # Initialize the world if it hasn't been initialized yet
-    if not gui_has_played_first_move:
-        world.generate((i, j))
-        gui_has_played_first_move = True
-
-        update_gui(world)  # update the GUI
-
-        # start game timer
-        gui_counting_time = True
-        gui_update_time(world)
-        return
-
-    if world.visible[i][j] == Constants.HIDDEN:
-        if world.check_square(i, j):
-            gui_lose(world)
-        else:
-            update_gui(world)
-
-            if world.check_win():
-                gui_win()
-
-        return
-
-    if world.check_square(i, j):
-        gui_lose(world)
-        return
-
-    update_gui(world)  # update the GUI
-
-    if world.check_win():
-        gui_win()
-
-
-def gui_flag(world: World, i: int, j: int) -> None:
-    """Flag a tile"""
-    global gui_has_played_first_move
-
-    if not gui_has_played_first_move:
-        # player can't flag a tile until they have played a move
-        return
-
-    world.flag_square(i, j)  # flag the tile
-    update_gui(world)  # update the GUI
-
-    if world.check_win():
-        gui_win()
-
-
-def gui_change_mine_count(new_count: str) -> bool:
-    """Change the mine count"""
-    if new_count == "":
-        return True  # Enable an empty text input
-    if not new_count.isnumeric():
-        return False
-    return True
-
-
-def gui_change_world_size(new_size: str) -> bool:
-    """Change the world size"""
-    if new_size == "":
-        return True  # Enable an empty text input
-    if not new_size.isnumeric():
-        return False
-    return True
-
-
-def gui_process_new_game_input() -> None:
-    """Process the new game input"""
-    global mine_count, world_size
-
-    # validation
-    if gui_mine_count.get() == "" or not gui_mine_count.get().isnumeric() \
-            or int(gui_mine_count.get()) < 1 or int(gui_mine_count.get()) > Constants.MAX_GUI_WORLD_SIZE ** 2:
-        return
-    if gui_world_size.get() == "" or not gui_world_size.get().isnumeric() \
-            or int(gui_world_size.get()) < 3 or int(gui_world_size.get()) > Constants.MAX_GUI_WORLD_SIZE:
-        return
-
-    mine_count = int(gui_mine_count.get())
-    world_size = int(gui_world_size.get())
-
-    # close popup window
-    gui_new_window.destroy()
-
-    gui_new_game()
-
-
-def gui_new_game_window() -> None:
-    """Create a new game window"""
-    global gui_new_window, gui_mine_count, gui_world_size
-
-    gui_new_window = tk.Toplevel()
-    gui_new_window.title("New Game")
-
-    reg_change_world_size = gui_new_window.register(gui_change_world_size)
-    reg_change_mine_count = gui_new_window.register(gui_change_mine_count)
-
-    # gui_new_window.geometry("400x100")
-
-    ttk.Label(gui_new_window, text="New Game Settings",
-              font=(ttk.Style().lookup("TButton", "font"), 10, "bold")).pack(pady=5)
-
-    layout = ttk.Frame(gui_new_window)
-
-    ttk.Label(layout, text="Mine Count", justify="left", width=12).grid(row=0, column=0)
-
-    # Create the entry field for the mine count
-    gui_mine_count = ttk.Entry(layout, width=12)
-    gui_mine_count.insert(0, str(mine_count))
-    gui_mine_count.config(validate="key", validatecommand=(reg_change_mine_count, "%P"))
-    gui_mine_count.grid(row=1, column=0, padx=5)
-
-    ttk.Label(layout, text="World Size", justify="left", width=12).grid(row=0, column=1)
-
-    # Create the entry field for the world size
-    gui_world_size = ttk.Entry(layout, width=12)
-    gui_world_size.insert(0, str(world_size))
-    gui_world_size.config(validate="key", validatecommand=(reg_change_world_size, "%P"))
-    gui_world_size.grid(row=1, column=1)
-
-    button = ttk.Button(layout, text="New Game", command=gui_process_new_game_input)
-    button.grid(row=1, column=2, padx=5, pady=5)
-
-    layout.pack()
-
-    gui_new_window.configure(padx=10, pady=10)
-
-    gui_new_window.focus_set()
-
-
-def gui_main() -> None:
-    """Alternative main loop for the GUI"""
-    global gui_buttons, gui_world, gui_root, \
-        gui_mines_left, gui_time_taken, gui_counting_time
-
-    # Create the main window and run the event loop
-    gui_root = tk.Tk()
-    gui_root.geometry()
-    gui_root.title('Minesweeper')
-
-    # Create menu
-    # Create main buttons
-    buttons = ttk.Frame(gui_root)
-
-    new_game_button = ttk.Button(buttons, text="New Game", command=gui_new_game_window)
-    new_game_button.grid(column=0, row=0, pady=5)
-
-    quit_button = ttk.Button(buttons, text="Quit", command=gui_root.quit)
-    quit_button.grid(column=1, row=0)
-
-    buttons.columnconfigure(0, pad=15)
-    buttons.rowconfigure(1, pad=15)
-
-    buttons.grid(row=2)
-
-    # Create game timer and remaining mine count
-    counts = ttk.Frame(gui_root)
-
-    ttk.Label(counts, text="Timer").grid(column=0, row=0)
-
-    gui_time_taken = ttk.Label(counts, text="0:00")
-    gui_time_taken.grid(column=0, row=1)
-
-    ttk.Label(counts, text="Mines Left").grid(column=1, row=0)
-
-    gui_mines_left = ttk.Label(counts, text=str(mine_count))
-    gui_mines_left.grid(column=1, row=1)
-
-    counts.grid(row=3)
-
-    # Create world
-    gui_world = ttk.Frame(gui_root)
-    gui_world.configure(padding=10)
-
-    gui_new_game()
-
-    gui_world.grid(row=4)
-
-    gui_root.mainloop()
-
 def process_square(world: World, square: str):
-    if square in ["quit", "exit"]:
-        return Constants.MENU_QUIT, False, 0, 0
-    if square in ["display", "print"]:
-        return Constants.MENU_DISPLAY, False, 0, 0
-    if square == "color":
-        return Constants.MENU_ENABLE_COLOR, False, 0, 0
-    if square == "unicode":
-        return Constants.MENU_ENABLE_UNICODE, False, 0, 0
-
-    if len(square) < 2:
-        return Constants.MENU_ERROR, False, 0, 0
-
     flagging = False
     x, y = 0, 0
 
-    if not square[0].isalpha():
-        print("Error: no valid letter found in square")
-        return Constants.MENU_ERROR, False, 0, 0
+    match square:
+        case "quit" | "exit":
+            return Settings.MENU_QUIT, False, 0, 0
+        case "display" | "print":
+            return Settings.MENU_DISPLAY, False, 0,
+        case "help":
+            return Settings.MENU_HELP, False, 0, 0
+        case "color":
+            return Settings.MENU_ENABLE_COLOR, False, 0, 0
+        case "unicode":
+            return Settings.MENU_ENABLE_UNICODE, False, 0, 0
+
+    if len(square) < 2 or not square[0].isalpha():
+        return Settings.MENU_ERROR, False, 0, 0
 
     if square[1].isalpha():
-        if square[0] == 'f':
-            flagging = True
-        else:
-            # error
-            return Constants.MENU_ERROR, False, 0, 0
+        if square[0] != 'f':
+            return Settings.MENU_ERROR, False, 0, 0
 
-        if not square[1].isalpha():
-            print("Error: no valid letter found in square")
-            return Constants.MENU_ERROR, False, 0, 0
+        flagging = True
+
+        if not square[1].isalpha() or len(square) < 3:
+            print("Error: Invalid location")
+            return Settings.MENU_ERROR, False, 0, 0
+
         x = int(ord(square[1]) - ord('a'))
-        if len(square) < 3:
-            print("Error: no valid number found in square")
-            return Constants.MENU_ERROR, False, 0, 0
-
         y = square[2:]
     else:
         x = int(ord(square[0]) - ord('a'))
@@ -732,46 +821,53 @@ def process_square(world: World, square: str):
 
     if not y.isnumeric():
         print("Error: no valid number found in square")
-        return Constants.MENU_ERROR, False, 0, 0
-
+        return Settings.MENU_ERROR, False, 0, 0
     y = int(y) - 1
 
     if not world.in_bounds(x, y):
         print("Error: square is not in world ({}, {})".format(x, y))
-        return Constants.MENU_ERROR, False, 0, 0
+        return Settings.MENU_ERROR, False, 0, 0
 
     return 0, flagging, x, y
 
 def get_input(world: World) -> tuple[int, bool, int, int]:
-    ps = Constants.MENU_ERROR, False, 0, 0
-    while ps[0] in [Constants.MENU_ERROR, Constants.MENU_QUIT, Constants.MENU_DISPLAY,
-                        Constants.MENU_ENABLE_COLOR, Constants.MENU_ENABLE_UNICODE]:
+    ps = [-1]
+    while ps[0] != 0:
         square = input("Enter a starting square to begin (type 'help' for help): ").lower()
         ps = process_square(world, square)
-        if ps[0] == Constants.MENU_QUIT:
-            print("Quitting...")
-            return Constants.MENU_QUIT, False, 0, 0
-        if ps[0] == Constants.MENU_HELP:
-            print(Constants.MENU_HELP_STRING)
-            continue
-        if ps[0] == Constants.MENU_DISPLAY:
-            if world.has_generated:
-                world.display()
-        if ps[0] == Constants.MENU_ENABLE_COLOR:
-            world.use_color = True
-        if ps[0] == Constants.MENU_ENABLE_UNICODE:
-            world.use_unicode = True
+        match ps[0]:
+            case Settings.MENU_QUIT:
+                print("Quitting...")
+                return Settings.MENU_QUIT, False, 0, 0
+            case Settings.MENU_HELP:
+                Settings.PrintHelp()
+            case Settings.MENU_DISPLAY:
+                if world.has_generated:
+                    world.display()
+            case Settings.MENU_ENABLE_COLOR:
+                world.use_color = not world.use_color
+            case Settings.MENU_ENABLE_UNICODE:
+                world.use_unicode = not world.use_unicode
+            case _:
+                pass
 
     return ps[0], ps[1], ps[2], ps[3]
 
-def main(args: list[str]) -> None:
+def main() -> None:
     """Main function and entry point for the minesweeper program"""
-    args = process_args(args)
-    sys.setrecursionlimit(2 * args["world-size-x"] * args["world-size-y"])
+    args = process_args()
+    sys.setrecursionlimit(4 * args["world-size-x"] * args["world-size-y"])
 
-    if args["use-gui"]:
-        gui_main()  # start the GUI
-        return
+    Settings.LoadPreferences(args["preferences"])
+
+    if args["use-gui"] :
+        if enable_gui:
+            gui = GUI()
+            gui.main()  # start the GUI
+            return
+        else:
+            print("GUI not available. Please install PyQt6.")
+            return
 
     # start console game
     print("Welcome to Minesweeper!")
@@ -780,8 +876,8 @@ def main(args: list[str]) -> None:
         world_size_x=args["world-size-x"],
         world_size_y=args["world-size-y"],
         mine_count=args["mine-count"],
-        use_color=args["use-color"],
-        use_unicode=args["use-unicode"]
+        use_color=True if args["use-color"] or Settings.DefaultUseColor else False,
+        use_unicode=True if args["use-unicode"] or Settings.DefaultUseUnicode else False,
     )
 
     # get user input
@@ -790,7 +886,7 @@ def main(args: list[str]) -> None:
         print("Can't flag on the first move!")
         ps = get_input(world)
 
-    if ps[0] == Constants.MENU_QUIT:
+    if ps[0] == Settings.MENU_QUIT:
         return
 
     world.generate((ps[2], ps[3]))
@@ -801,7 +897,7 @@ def main(args: list[str]) -> None:
 
         # get user input
         ps = get_input(world)
-        if ps[0] == Constants.MENU_QUIT:
+        if ps[0] == Settings.MENU_QUIT:
             return
 
         if ps[1]:  # flag
@@ -810,7 +906,6 @@ def main(args: list[str]) -> None:
             x = world.check_square(ps[2], ps[3])
 
             if x:
-                print("Oh No! You hit a bomb!")
                 world.display()
                 world.display_all()
                 print("Oh No! You hit a bomb!")
@@ -823,10 +918,9 @@ def main(args: list[str]) -> None:
     finish_time = time.time() - world.start_time
     print(f"Finished in {round(finish_time)} seconds.")
 
-
 if __name__ == '__main__':
     try:
-        main(sys.argv)  # runs the program
+        main()  # runs the program
     except KeyboardInterrupt:
         print("\n\nReceived KeyboardInterrupt")
         print("Quitting...")
