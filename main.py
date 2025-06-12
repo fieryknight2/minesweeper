@@ -87,7 +87,7 @@ class Settings:
                                     Settings.CharacterUnicode[Settings.Bomb] = data[key]["bomb"]
                                 if "bad_flag" in data[key].keys():
                                     Settings.CharacterUnicode[Settings.BadFlag] = data[key]["bad_flag"]
-                            case "default":
+                            case "defaults":
                                 if "use_color" in data[key].keys():
                                     Settings.DefaultUseColor = data[key]["use_color"]
                                 if "use_unicode" in data[key].keys():
@@ -365,7 +365,7 @@ class World:
 
 if enable_gui:
     from PyQt6.QtWidgets import QMainWindow, QApplication, QPushButton, QLabel, QDialogButtonBox, QSlider, QWidget
-    from PyQt6.QtWidgets import QVBoxLayout, QDialog, QHBoxLayout, QGridLayout, QVBoxLayout, QMessageBox
+    from PyQt6.QtWidgets import QVBoxLayout, QDialog, QHBoxLayout, QGridLayout, QVBoxLayout, QMessageBox, QSpinBox
     from PyQt6.QtCore import QTimer, Qt
 
     class GButton(QLabel):
@@ -494,7 +494,8 @@ if enable_gui:
             self.setWindowTitle("New Game")
 
             self.mine_count = 10
-            self.world_size = 9
+            self.world_size_x = 9
+            self.world_size_y = 9
 
             vlayout = QVBoxLayout()
 
@@ -503,28 +504,58 @@ if enable_gui:
             self.buttonBox.accepted.connect(accept)
             self.buttonBox.rejected.connect(lambda: self.close())
 
+            self.message = QLabel("Choose the size of the world and the number of mines.")
+            vlayout.addWidget(self.message)
+
+            self.error = QLabel("Too many mines for the world size!")
+            self.error.setStyleSheet("QLabel { color: red; }")
+            self.error.hide()
+            vlayout.addWidget(self.error)
+
             layout = QGridLayout()
 
+            self.mine_count = world.mine_count
             self.gui_mine_count = QSlider(Qt.Orientation.Horizontal)
-            self.gui_mine_count.setValue(world.mine_count)
+            self.gui_mine_count.setValue(self.mine_count)
             self.gui_mine_count.setRange(10,int(Settings.MaxGuiWorldSize*Settings.MaxGuiWorldSize*0.3))
             self.gui_mine_count.valueChanged.connect(self.update_mine_count)
-            self.gui_mine_countv = QLabel(str(world.mine_count))
+            self.gui_mine_countv = QSpinBox()
+            self.gui_mine_countv.setValue(self.mine_count)
+            self.gui_mine_countv.setRange(10,int(Settings.MaxGuiWorldSize*Settings.MaxGuiWorldSize*0.3))
+            self.gui_mine_countv.valueChanged.connect(self.update_mine_count)
             self.gui_mine_countv.setMinimumWidth(30)
 
-            self.gui_world_size = QSlider(Qt.Orientation.Horizontal)
-            self.gui_world_size.setValue(world.world_size_y)
-            self.gui_world_size.setRange(3, Settings.MaxGuiWorldSize)
-            self.gui_world_size.valueChanged.connect(self.update_world_size)
-            self.gui_world_sizev = QLabel(str(world.world_size_y))
-            self.gui_mine_countv.setMinimumWidth(30)
+            self.world_size_x = world.world_size_x
+            self.gui_world_size_x = QSlider(Qt.Orientation.Horizontal)
+            self.gui_world_size_x.setValue(self.world_size_x)
+            self.gui_world_size_x.setRange(3, Settings.MaxGuiWorldSize)
+            self.gui_world_size_x.valueChanged.connect(self.update_world_size_x)
+            self.gui_world_sizev_x = QSpinBox()
+            self.gui_world_sizev_x.setValue(self.world_size_x)
+            self.gui_world_sizev_x.setRange(3, Settings.MaxGuiWorldSize)
+            self.gui_world_sizev_x.valueChanged.connect(self.update_world_size_x)
+            self.gui_world_sizev_x.setMinimumWidth(30)
+
+            self.world_size_y = world.world_size_y
+            self.gui_world_size_y = QSlider(Qt.Orientation.Horizontal)
+            self.gui_world_size_y.setValue(self.world_size_y)
+            self.gui_world_size_y.setRange(3, Settings.MaxGuiWorldSize)
+            self.gui_world_size_y.valueChanged.connect(self.update_world_size_y)
+            self.gui_world_sizev_y = QSpinBox()
+            self.gui_world_sizev_y.setValue(self.world_size_y)
+            self.gui_world_sizev_y.setRange(3, Settings.MaxGuiWorldSize)
+            self.gui_world_sizev_y.valueChanged.connect(self.update_world_size_y)
+            self.gui_world_sizev_y.setMinimumWidth(30)
 
             layout.addWidget(QLabel("Mine Count"), 0, 0)
             layout.addWidget(self.gui_mine_count, 0, 1)
             layout.addWidget(self.gui_mine_countv, 0, 3)
-            layout.addWidget(QLabel("World Size"), 1, 0)
-            layout.addWidget(self.gui_world_size, 1, 1)
-            layout.addWidget(self.gui_world_sizev, 1, 3)
+            layout.addWidget(QLabel("World Width"), 1, 0)
+            layout.addWidget(self.gui_world_size_x, 1, 1)
+            layout.addWidget(self.gui_world_sizev_x, 1, 3)
+            layout.addWidget(QLabel("World Height"), 2, 0)
+            layout.addWidget(self.gui_world_size_y, 2, 1)
+            layout.addWidget(self.gui_world_sizev_y, 2, 3)
 
             vlayout.addLayout(layout)
             vlayout.addWidget(self.buttonBox)
@@ -533,15 +564,25 @@ if enable_gui:
 
         def update_mine_count(self, value):
             self.mine_count = value
-            self.gui_mine_countv.setText(str(value))
+            self.gui_mine_countv.setValue(value)
+            self.gui_mine_count.setValue(value)
 
-            if self.mine_count > self.world_size * self.world_size / 3:
-                self.world_size = math.ceil(math.sqrt(self.mine_count * 3))
-                self.gui_world_size.setValue(self.world_size)
+            if self.mine_count > self.world_size_x * self.world_size_y / 3:
+                self.buttonBox.setDisabled(True)
+                self.error.show()
+            else:
+                self.buttonBox.setDisabled(False)
+                self.error.hide()
 
-        def update_world_size(self, value):
-            self.world_size = value
-            self.gui_world_sizev.setText(str(value))
+        def update_world_size_x(self, value):
+            self.world_size_x = value
+            self.gui_world_sizev_x.setValue(value)
+            self.gui_world_size_x.setValue(value)
+
+        def update_world_size_y(self, value):
+            self.world_size_y = value
+            self.gui_world_sizev_y.setValue(value)
+            self.gui_world_size_y.setValue(value)
 
     class ErrorDialog(QDialog):
         def __init__(self, parent, message):
@@ -576,7 +617,8 @@ if enable_gui:
             self.counting_time = False
             self.lose_state: bool = False
 
-            self.world_size = 9
+            self.world_size_x = 9
+            self.world_size_y = 9
             self.mine_count = 10
 
         def new_game(self) -> None:
@@ -585,10 +627,10 @@ if enable_gui:
 
             self.gui_window.hide()
             self.world = World()
-            self.world.world_size_y = self.world_size
-            self.world.world_size_x = self.world_size
+            self.world.world_size_y = self.world_size_y
+            self.world.world_size_x = self.world_size_x
             self.world.mine_count = self.mine_count
-            sys.setrecursionlimit(4 * self.world_size * self.world_size)
+            sys.setrecursionlimit(4 * self.world_size_y * self.world_size_x)
 
             self.gui_window.create_buttons(self.world)
             self.gui_window.mines_left.setText(str(self.world.mine_count))
@@ -725,7 +767,8 @@ if enable_gui:
         def process_new_game_input(self) -> None:
             """Process the new game input"""
             self.mine_count = self.new_game_window.mine_count
-            self.world_size = self.new_game_window.world_size
+            self.world_size_x = self.new_game_window.world_size_x
+            self.world_size_y = self.new_game_window.world_size_y
             self.new_game_window.close()
             self.new_game_window = None
 
