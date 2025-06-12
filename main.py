@@ -241,7 +241,8 @@ class World:
             if i < 26:
                 print(f" {chr(i + ord('a'))}", end="")
             elif i < 52:
-                print(f" {chr(i + ord('A'))}", end="")
+                print(f" {chr(i - 26 + ord('A'))}", end="")
+            else:
                 pass
 
         print()
@@ -831,7 +832,7 @@ def process_square(world: World, square: str):
     flagging = False
     x, y = 0, 0
 
-    match square:
+    match square.lower():
         case "quit" | "exit":
             return Settings.MENU_QUIT, False, 0, 0
         case "display" | "print":
@@ -866,7 +867,7 @@ def process_square(world: World, square: str):
     if ord(square[alpha_loc]) >= ord('a'):
         x = int(ord(square[alpha_loc]) - ord('a'))
     else:
-        x = int(ord(square[alpha_loc]) - ord('A'))
+        x = int(ord(square[alpha_loc]) - ord('A')) + 26
 
     if not y.isnumeric():
         print("Error: no valid number found in square")
@@ -882,7 +883,7 @@ def process_square(world: World, square: str):
 def get_input(world: World) -> tuple[int, bool, int, int]:
     ps = [-1]
     while ps[0] != 0:
-        square = input("Enter a starting square to begin (type 'help' for help): ").lower()
+        square = input("Enter a starting square to begin (type 'help' for help): ")
         ps = process_square(world, square)
         match ps[0]:
             case Settings.MENU_QUIT:
