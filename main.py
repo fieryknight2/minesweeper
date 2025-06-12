@@ -42,7 +42,6 @@ import random
 import argparse
 import os
 import json
-import math
 
 enable_gui: bool = True
 try:
@@ -56,7 +55,7 @@ class Settings:
 
     @staticmethod
     def LoadPreferences(path):
-        """Load preferences from a json file, only do this before creating a world"""
+        """Load preferences from a JSON file, only do this before creating a world"""
         if os.path.isfile(path):
             try:
                 with open(path, "r") as file:
@@ -373,6 +372,19 @@ if enable_gui:
         pressPosR = None
         pressPosL = None
 
+        darkTheme = """QLabel { background-color: #2c2c2c; color: #eee; border: 1px solid #444; };
+                QLabel:hover { background-color: #3a3a3a; };
+                """
+        disabledDarkTheme = """QLabel { background-color: #1e1e1e; color: #eee; border: 1px solid #333; };
+                QLabel:hover { background-color: #1e1e1e; };
+                """
+
+        lightTheme = """QLabel { background-color: #e0e0e0; border: 1px solid #b0b0b0; color: #1a1a1a; };
+                QLabel:hover { background-color: #e4efff; };
+                """
+        disabledLightTheme = """QLabel { background-color: #ffffff; color: #222; border: 1px solid #c0c0c0; };
+                QLabel:hover { background-color: #ffffff; };
+                """
         def __init__(self, text=""):
             super().__init__(text)
 
@@ -380,11 +392,7 @@ if enable_gui:
             self.left_click_action = None
 
             self.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            self.setStyleSheet(
-                "QLabel { background-color: #2c2c2c; color: #eee; border: 1px solid #444; }"
-                "QLabel:hover { background-color: #3a3a3a; }"
-                "QLabel:pressed { background-color: #444; }"
-            )
+            self.setStyleSheet(self.darkTheme)
 
         def mousePressEvent(self, e):
             if e.button() == Qt.MouseButton.RightButton:
@@ -402,11 +410,7 @@ if enable_gui:
             self.pressPosL = None
 
         def reveal(self):
-            self.setStyleSheet(
-                "QLabel { background-color: #1e1e1e; color: #eee; border: 1px solid #333; }"
-                "QLabel:hover { background-color: #1e1e1e; }"
-                "QLabel:pressed { background-color: #1e1e1e; }"
-            )
+            self.setStyleSheet(self.disabledDarkTheme)
 
     class GUIWindow(QMainWindow):
         """GUI window for the minesweeper game"""
