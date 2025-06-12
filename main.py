@@ -863,10 +863,10 @@ def process_square(world: World, square: str):
         alpha_loc = 0
         y = square[1:]
 
-    if ord(square[alpha_loc]) >= ord('A'):
-        x = int(ord(square[alpha_loc]) - ord('A'))
-    else:
+    if ord(square[alpha_loc]) >= ord('a'):
         x = int(ord(square[alpha_loc]) - ord('a'))
+    else:
+        x = int(ord(square[alpha_loc]) - ord('A'))
 
     if not y.isnumeric():
         print("Error: no valid number found in square")
