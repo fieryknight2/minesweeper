@@ -160,7 +160,7 @@ class Settings:
 """
 
 class World:
-    MAX_WORLD_SIZE_X = 26
+    MAX_WORLD_SIZE_X = 52
     MAX_WORLD_SIZE_Y = 100
 
     EASY_SIZE_X = 9
@@ -240,8 +240,8 @@ class World:
         for i in range(self.world_size_x):
             if i < 26:
                 print(f" {chr(i + ord('a'))}", end="")
-            else:
-                # TODO
+            elif i < 52:
+                print(f" {chr(i + ord('A'))}", end="")
                 pass
 
         print()
@@ -846,6 +846,7 @@ def process_square(world: World, square: str):
     if len(square) < 2 or not square[0].isalpha():
         return Settings.MENU_ERROR, False, 0, 0
 
+    alpha_loc = 0
     if square[1].isalpha():
         if square[0] != 'f':
             return Settings.MENU_ERROR, False, 0, 0
@@ -856,11 +857,16 @@ def process_square(world: World, square: str):
             print("Error: Invalid location")
             return Settings.MENU_ERROR, False, 0, 0
 
-        x = int(ord(square[1]) - ord('a'))
+        alpha_loc = 1
         y = square[2:]
     else:
-        x = int(ord(square[0]) - ord('a'))
+        alpha_loc = 0
         y = square[1:]
+
+    if ord(square[alpha_loc]) >= ord('A'):
+        x = int(ord(square[alpha_loc]) - ord('A'))
+    else:
+        x = int(ord(square[alpha_loc]) - ord('a'))
 
     if not y.isnumeric():
         print("Error: no valid number found in square")
