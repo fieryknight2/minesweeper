@@ -331,9 +331,7 @@ class World:
     def check_win(self) -> bool:
         for x in range(self.world_size_x):
             for y in range(self.world_size_y):
-                if self.visible[y][x] == Settings.Hidden:
-                    return False
-                if self.visible[y][x] == Settings.Flag and not self.mines[y][x]:
+                if self.visible[y][x] == Settings.Hidden and not self.mines[y][x]:
                     return False
 
         return True
@@ -366,33 +364,58 @@ class World:
 if enable_gui:
     from PyQt6.QtWidgets import QMainWindow, QApplication, QPushButton, QLabel, QDialogButtonBox, QSlider, QWidget
     from PyQt6.QtWidgets import QVBoxLayout, QDialog, QHBoxLayout, QGridLayout, QVBoxLayout, QMessageBox, QSpinBox
-    from PyQt6.QtCore import QTimer, Qt
+    from PyQt6.QtCore import QTimer, Qt, QObject, QEvent
+    from PyQt6.QtGui import QPalette
 
     class GButton(QLabel):
         pressPosR = None
         pressPosL = None
 
-        darkTheme = """QLabel { background-color: #2c2c2c; color: #eee; border: 1px solid #444; };
-                QLabel:hover { background-color: #3a3a3a; };
-                """
-        disabledDarkTheme = """QLabel { background-color: #1e1e1e; color: #eee; border: 1px solid #333; };
-                QLabel:hover { background-color: #1e1e1e; };
-                """
+        styleSheet = """
+*[theme="dark"] {
+    background-color: #2c2c2c;
+    color: #eee;
+    border: 1px solid #444;
+}
 
-        lightTheme = """QLabel { background-color: #e0e0e0; border: 1px solid #b0b0b0; color: #1a1a1a; };
-                QLabel:hover { background-color: #e4efff; };
-                """
-        disabledLightTheme = """QLabel { background-color: #ffffff; color: #222; border: 1px solid #c0c0c0; };
-                QLabel:hover { background-color: #ffffff; };
-                """
-        def __init__(self, text=""):
+*[theme="dark-disabled"] {
+    background-color: #1e1e1e;
+    color: #eee;
+    border: 1px solid #333;
+}
+
+*[theme="light"] {
+    background-color: #f7f7f7;
+    color: #1e1e1e;
+    border: 1px solid #b5b5b5;
+}
+
+*[theme="light-disabled"] {
+    background-color: #ececec;
+    color: #666666;
+    border: 1px solid #cccccc;
+}
+
+*[warning="true"] {
+    background-color: #ffdddd;
+    color: #b00020;
+    border: 1px solid #b00020;               
+}
+"""
+
+        def __init__(self, theme=False, text=""):
             super().__init__(text)
 
             self.right_click_action = None
             self.left_click_action = None
 
+            self.theme = theme
+            self.warning = False
+            self.revealed = False
+
             self.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            self.setStyleSheet(self.darkTheme)
+            self.setStyleSheet(self.styleSheet)
+            self.setProperty("theme", "dark" if self.theme else "light")
 
         def mousePressEvent(self, e):
             if e.button() == Qt.MouseButton.RightButton:
@@ -410,16 +433,43 @@ if enable_gui:
             self.pressPosL = None
 
         def reveal(self):
-            self.setStyleSheet(self.disabledDarkTheme)
+            self.revealed = True
+            self.setProperty("theme", "dark-disabled" if self.theme else "light-disabled")
+            self.style().unpolish(self)
+            self.style().polish(self)
+
+        def set_warning(self, value: bool):
+            if self.warning == value:
+                return
+
+            self.warning = value
+            self.setProperty("warning", "true" if value else "false")
+
+            self.style().unpolish(self)
+            self.style().polish(self)
+
+        def change_theme(self, dark: bool):
+            if self.theme == dark:
+                return
+            self.theme = dark
+
+            theme_base = "dark" if dark else "light"
+            theme_suffix = "-disabled" if self.revealed else ""
+            self.setProperty("theme", theme_base + theme_suffix)
+
+            self.style().unpolish(self)
+            self.style().polish(self)
 
     class GUIWindow(QMainWindow):
         """GUI window for the minesweeper game"""
-        def __init__(self):
+        def __init__(self, theme=False):
             super().__init__()
 
             self.setWindowTitle("Minesweeper")
 
             self.buttons = []
+
+            self.theme = theme
 
             self.lose_message = None
             self.win_message = None
@@ -428,6 +478,13 @@ if enable_gui:
 
             self.root = None
             self.button_grid = None
+
+        def update_theme(self, dark: bool):
+            self.theme = dark
+
+            for y in range(len(self.buttons)):
+                for x in range(len(self.buttons[y])):
+                    self.buttons[y][x].change_theme(dark)
 
         def create_layout(self, new_game_window, quit_action):
             self.root = QVBoxLayout()
@@ -483,7 +540,7 @@ if enable_gui:
             for y in range(world.world_size_y):
                 self.buttons.append([])
                 for x in range(world.world_size_x):
-                    self.buttons[y].append(GButton(""))
+                    self.buttons[y].append(GButton(self.theme, ""))
                     self.buttons[y][x].setFixedSize(20, 20)
                     self.button_grid.addWidget(self.buttons[y][x], y, x)
 
@@ -504,6 +561,7 @@ if enable_gui:
 
             vlayout = QVBoxLayout()
 
+            # noinspection PyTypeChecker
             qbtn = QDialogButtonBox.StandardButton.Cancel | QDialogButtonBox.StandardButton.Ok
             self.buttonBox = QDialogButtonBox(qbtn)
             self.buttonBox.accepted.connect(accept)
@@ -567,11 +625,7 @@ if enable_gui:
 
             self.setLayout(vlayout)
 
-        def update_mine_count(self, value):
-            self.mine_count = value
-            self.gui_mine_countv.setValue(value)
-            self.gui_mine_count.setValue(value)
-
+        def update_errors(self):
             if self.mine_count > self.world_size_x * self.world_size_y / 3:
                 self.buttonBox.setDisabled(True)
                 self.error.show()
@@ -579,15 +633,26 @@ if enable_gui:
                 self.buttonBox.setDisabled(False)
                 self.error.hide()
 
+        def update_mine_count(self, value):
+            self.mine_count = value
+            self.gui_mine_countv.setValue(value)
+            self.gui_mine_count.setValue(value)
+
+            self.update_errors()
+
         def update_world_size_x(self, value):
             self.world_size_x = value
             self.gui_world_sizev_x.setValue(value)
             self.gui_world_size_x.setValue(value)
 
+            self.update_errors()
+
         def update_world_size_y(self, value):
             self.world_size_y = value
             self.gui_world_sizev_y.setValue(value)
             self.gui_world_size_y.setValue(value)
+
+            self.update_errors()
 
     class ErrorDialog(QDialog):
         def __init__(self, parent, message):
@@ -609,6 +674,30 @@ if enable_gui:
         def accept(self):
             self.close()
 
+    class ThemeWatcher(QObject):
+        """Class to watch for theme changes and update the GUI"""
+        def __init__(self, gui, action=None):
+            super().__init__()
+            self.gui = gui
+            self.last_theme = self.detect_theme()
+            self.action = action
+
+        def detect_theme(self) -> bool:
+            """Detect the current theme"""
+            palette = self.gui.application.palette()
+            bg = palette.color(QPalette.ColorRole.Window)
+            brightness = bg.value()
+            return brightness < 128
+
+        def eventFilter(self, obj: QObject, event: QEvent) -> bool:
+            if event.type() == QEvent.Type.ApplicationPaletteChange:
+                new_theme = self.detect_theme()
+                if new_theme != self.last_theme:
+                    self.last_theme = new_theme
+                    if self.action is not None:
+                        self.action(new_theme)
+            return super().eventFilter(obj, event)
+
     class GUI:
         """GUI for the minesweeper game"""
         def __init__(self):
@@ -618,9 +707,11 @@ if enable_gui:
             self.application = None
             self.gui_window = None
             self.new_game_window = None
+            self.eventFilter = None
 
             self.counting_time = False
             self.lose_state: bool = False
+            self.win_state: bool = False
 
             self.world_size_x = 9
             self.world_size_y = 9
@@ -665,11 +756,17 @@ if enable_gui:
             dlg.setStandardButtons(QMessageBox.StandardButton.Ok)
             dlg.exec()
 
-
         def win(self) -> None:
             """Display a message to the user that they won"""
             self.gui_window.show_win()
             self.counting_time = False
+            self.win_state = True
+
+            for x in range(self.world.world_size_x):
+                for y in range(self.world.world_size_y):
+                    if self.world.visible[y][x] == Settings.Hidden:
+                        self.world.flag_square(x, y)
+            self.update_gui()
 
             dlg = QMessageBox()
             dlg.setWindowTitle("Congratulations!")
@@ -677,7 +774,6 @@ if enable_gui:
             dlg.setIcon(QMessageBox.Icon.Information)
             dlg.setStandardButtons(QMessageBox.StandardButton.Ok)
             dlg.exec()
-
 
         def update_gui(self) -> None:
             """Update the GUI"""
@@ -688,6 +784,7 @@ if enable_gui:
 
                     if self.world.visible[y][x].isnumeric():
                         self.gui_window.buttons[y][x].setText(self.world.visible[y][x])
+                        self.gui_window.buttons[y][x].set_warning(self.world.count_nearby(x, y, Settings.Flag) > int(self.world.visible[y][x]))
                         continue
 
                     match self.world.visible[y][x]:
@@ -713,8 +810,10 @@ if enable_gui:
                                 value = Settings.CharacterUnicode[Settings.BadFlag]
                         elif value == Settings.Hidden and self.world.mines[y][x]:
                             value = Settings.CharacterUnicode[Settings.Bomb]
+                            self.gui_window.buttons[y][x].reveal()
                         elif value == Settings.Bomb:
                             value = Settings.CharacterUnicode[Settings.Bomb]
+                            self.gui_window.buttons[y][x].reveal()
                         elif value == Settings.Hidden:
                             value = ' '
                         else:
@@ -736,15 +835,18 @@ if enable_gui:
 
                 QTimer.singleShot(1, self.update_time)
 
-
         def click(self, x: int, y: int) -> None:
             """Click a tile"""
             # Initialize the world if it hasn't been initialized yet
             if not self.world.has_generated:
                 self.world.generate((x, y))
                 self.counting_time = True
+                self.win_state = False
                 self.update_gui()
                 self.update_time()
+                return
+
+            if self.win_state:
                 return
 
             if self.world.check_square(x, y):
@@ -756,18 +858,14 @@ if enable_gui:
             if self.world.check_win():
                 self.win()
 
-
         def flag(self, x: int, y: int) -> None:
             """Flag a tile"""
-            if not self.world.has_generated:
+            if self.win_state or not self.world.has_generated:
                 # player can't flag a tile until the world has generated
                 return
 
             self.world.flag_square(x, y)
             self.update_gui()
-
-            if self.world.check_win():
-                self.win()
 
         def process_new_game_input(self) -> None:
             """Process the new game input"""
@@ -776,6 +874,7 @@ if enable_gui:
             self.world_size_y = self.new_game_window.world_size_y
             self.new_game_window.close()
             self.new_game_window = None
+            self.win_state = False
 
             self.new_game()
 
@@ -792,6 +891,11 @@ if enable_gui:
             self.application = QApplication([])
             self.gui_window = GUIWindow()
             self.gui_window.create_layout(self.new_game_dialog, self.on_quit)
+            self.eventFilter = ThemeWatcher(self, self.gui_window.update_theme)
+            self.application.installEventFilter(self.eventFilter)
+
+            self.eventFilter.detect_theme()
+            self.gui_window.update_theme(self.eventFilter.last_theme)
 
             self.new_game()
 
