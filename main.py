@@ -9,7 +9,7 @@
 * in 2023 for fun, and I have recently started working on it again with
 * the help of AI to increase my knowledge of Python and practical coding.
 * This game was originally designed to be a simple console-based, minesweeper
-* implementation, but I decided to add a GUI and unicode support for fun.
+* implementation, but I decided to add a GUI and Unicode support for fun.
 *
 *
 * How to Play - Console Version -
@@ -93,7 +93,7 @@ class Settings:
                                     Settings.DefaultUseUnicode = data[key]["use_unicode"]
 
             except Exception as e:
-                print("Failed to load prefences file:", e)
+                print("Failed to load preferences file:", e)
 
     @staticmethod
     def PrintHelp():
@@ -656,7 +656,7 @@ if enable_gui:
 
     class ErrorDialog(QDialog):
         def __init__(self, parent, message):
-            super().__init__()
+            super().__init__(parent)
             self.setWindowTitle("Error")
 
             vlayout = QVBoxLayout()
